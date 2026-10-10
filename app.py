@@ -19,9 +19,10 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-from config import FLOW_URL, OUTPUT_DIR, LOGS_DIR, USER_DATA_DIR
+from config import FLOW_URL, OUTPUT_DIR, LOGS_DIR, USER_DATA_DIR, YOUTUBE_API_KEY
 from prompt_manager import PromptManager
 from downloader import VideoDownloader
+from trend_hunter import TrendHunter, LOCKED_COLORS, format_short_video_prompt
 
 # Initialize managers
 pm = PromptManager()
@@ -146,12 +147,83 @@ with st.sidebar.form("add_prompt_form", clear_on_submit=True):
 
 
 # --- Main Tabs ---
-tab_queue, tab_gallery, tab_logs, tab_docs = st.tabs([
+tab_queue, tab_hunter, tab_gallery, tab_logs, tab_docs = st.tabs([
     "📋 Prompt Queue",
+    "🔥 Viral Trend Hunter",
     "🎥 Video Gallery",
     "📜 Live Logs",
     "📖 Documentation & Setup"
 ])
+
+with tab_hunter:
+    st.subheader("🔥 Viral Car Trend Hunter")
+    st.caption("Discover high-velocity trending cars across YouTube Shorts, Google Trends, and automotive communities, then automatically generate ready-to-run 10-shot video prompts.")
+
+    col_h1, col_h2, col_h3 = st.columns([2, 1, 1])
+    with col_h1:
+        yt_api_input = st.text_input(
+            "YouTube Data API Key (Optional)",
+            value=YOUTUBE_API_KEY,
+            type="password",
+            help="Enables real-time queries for top-viewed YouTube Shorts. If left blank, Google Trends and the viral database are used automatically."
+        )
+    with col_h2:
+        num_cars = st.slider("Number of cars to hunt", min_value=1, max_value=8, value=4)
+    with col_h3:
+        st.write("")
+        st.write("")
+        scan_btn = st.button("🔍 Scan Trends Now", type="primary", use_container_width=True)
+
+    if "discovered_trends" not in st.session_state:
+        st.session_state.discovered_trends = []
+
+    if scan_btn:
+        hunter = TrendHunter(youtube_api_key=yt_api_input.strip() or None)
+        with st.spinner("Scanning YouTube Shorts, Google Trends, and viral automotive niches..."):
+            st.session_state.discovered_trends = hunter.get_trending_cars(max_results=num_cars)
+        st.success(f"Discovered {len(st.session_state.discovered_trends)} viral car trends!")
+
+    if st.session_state.discovered_trends:
+        col_act1, col_act2 = st.columns([3, 1])
+        with col_act1:
+            st.info("Review discovered trends below. You can change their color or add them directly to your generation queue.")
+        with col_act2:
+            if st.button("➕ Queue All Discovered Cars", use_container_width=True):
+                hunter = TrendHunter()
+                added = hunter.queue_trending_cars(st.session_state.discovered_trends, pm)
+                st.success(f"Added {added} trending car prompts to the queue!")
+                st.rerun()
+
+        for idx, t in enumerate(st.session_state.discovered_trends):
+            with st.container(border=True):
+                col_c1, col_c2, col_c3, col_c4 = st.columns([3, 2, 2, 1])
+                with col_c1:
+                    st.markdown(f"### {t['car']}")
+                    st.caption(f"Source: **{t['source']}** · Virality Score: **{t['score']}/100**")
+                    st.write(t.get("details", ""))
+                with col_c2:
+                    current_color = t.get("color", LOCKED_COLORS[0])
+                    col_idx = LOCKED_COLORS.index(current_color) if current_color in LOCKED_COLORS else 0
+                    selected_color = st.selectbox(
+                        "Chosen Color",
+                        options=LOCKED_COLORS,
+                        index=col_idx,
+                        key=f"color_select_{idx}"
+                    )
+                    t["color"] = selected_color
+                    t["prompt"] = format_short_video_prompt(t["car"], selected_color)
+                with col_c3:
+                    with st.expander("👁️ View Generated Prompt"):
+                        st.caption(t["prompt"])
+                with col_c4:
+                    if st.button("➕ Queue", key=f"queue_btn_{idx}", use_container_width=True):
+                        hunter = TrendHunter()
+                        added = hunter.queue_trending_cars([t], pm)
+                        if added:
+                            st.success(f"Queued {t['car']}!")
+                        else:
+                            st.warning("Already in queue!")
+                        st.rerun()
 
 with tab_queue:
     st.subheader("Manage Prompts")

@@ -46,6 +46,23 @@ def get_queue_status() -> str:
 
 
 @mcp.tool()
+def hunt_viral_cars(count: int = 3) -> str:
+    """Scan YouTube Shorts, Google Trends, and viral niches to discover top trending cars and auto-queue them.
+
+    Args:
+        count: Number of viral cars to hunt and queue (default 3).
+    """
+    from trend_hunter import TrendHunter
+    th = TrendHunter()
+    trends = th.get_trending_cars(max_results=count)
+    added = th.queue_trending_cars(trends, pm)
+    lines = [f"Successfully queued {added} viral cars into Google Flow automation:"]
+    for t in trends:
+        lines.append(f"- {t['car']} ({t['color']}) [Score: {t['score']}] Source: {t['source']}")
+    return "\n".join(lines)
+
+
+@mcp.tool()
 def list_generated_videos() -> str:
     """List all completed video files downloaded from Google Flow in output_videos/."""
     files = list(OUTPUT_DIR.glob("*.mp4")) + list(OUTPUT_DIR.glob("*.webm"))

@@ -45,10 +45,23 @@ def main():
     parser.add_argument("--retry", action="store_true", help="Reset all Failed/Processing prompts to Pending")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of prompts to process")
     parser.add_argument("--add", type=str, help="Add a new prompt to the queue")
+    parser.add_argument("--hunt", type=int, nargs="?", const=3, help="Hunt for top N viral cars and auto-queue them (default 3)")
     parser.add_argument("--headless", action="store_true", help="Force headless browser mode")
 
     args = parser.parse_args()
     pm = PromptManager()
+
+    if args.hunt:
+        from trend_hunter import TrendHunter
+        th = TrendHunter()
+        print(f"\nScanning viral automotive trends (top {args.hunt})...")
+        trends = th.get_trending_cars(max_results=args.hunt)
+        added = th.queue_trending_cars(trends, pm)
+        print(f"Successfully queued {added} new viral car prompts:")
+        for t in trends:
+            print(f"- {t['car']} ({t['color']}) [Score: {t['score']}] Source: {t['source']}")
+        print_status(pm)
+        return
 
     if args.add:
         item = pm.add_prompt(args.add)

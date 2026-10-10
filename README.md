@@ -132,9 +132,14 @@ Open your browser to `http://localhost:8501`. From the dashboard you can:
   python main.py --run --limit 1
   ```
 
+- **Hunt and Queue Viral Cars (e.g. top 3 trends)**:
+  ```powershell
+  python main.py --hunt 3
+  ```
+
 - **Add a Prompt via Terminal**:
   ```powershell
-  python main.py --add "A cinematic shot of a majestic eagle soaring above misty mountain peaks at sunrise."
+  python main.py --add "A miniature Racing Red Porsche 911 GT3 RS..."
   ```
 
 - **Retry Failed Prompts**:
@@ -143,6 +148,14 @@ Open your browser to `http://localhost:8501`. From the dashboard you can:
   ```
 
 ---
+
+## 🔥 Viral Car Trend Hunter
+
+The system includes an automated **Trend Hunter** (`trend_hunter.py`) that detects trending car models and automatically converts them into the 10-shot prompt format specified in `Car Promot.pdf`:
+- **Data Sources**: YouTube Shorts (via YouTube Data API v3), Google Trends RSS, and a high-velocity viral supercar & JDM catalogue.
+- **Color Matching**: Automatically pairs discovered cars with one of the 10 locked colors from `Car Promot.pdf` (or lets you pick via the UI).
+- **Streamlit Tab**: Navigate to the **"🔥 Viral Trend Hunter"** tab in the dashboard to scan, preview, and queue trending cars with one click!
+- **CLI Command**: Run `python main.py --hunt [N]` to scan and queue the top `N` viral cars from terminal.
 
 ## 📝 Prompt Management
 

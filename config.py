@@ -26,6 +26,9 @@ PAGE_TIMEOUT_SEC = int(os.getenv("PAGE_TIMEOUT_SEC", "60"))
 GENERATION_TIMEOUT_SEC = int(os.getenv("GENERATION_TIMEOUT_SEC", "360"))
 POLL_INTERVAL_SEC = int(os.getenv("POLL_INTERVAL_SEC", "3"))
 
+# Optional Viral Trend Hunter APIs
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY", "")
+
 # Directories
 OUTPUT_DIR = BASE_DIR / os.getenv("OUTPUT_DIR", "output_videos")
 LOGS_DIR = BASE_DIR / os.getenv("LOGS_DIR", "logs")
