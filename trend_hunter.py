@@ -217,3 +217,4 @@ class TrendHunter:
                 queued_count += 1
 
         return queued_count
+
