@@ -1,0 +1,32 @@
+# Python virtual environment
+.venv/
+venv/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+
+# Sensitive browser profile & session data
+.browser_data/
+*.session
+cookies.json
+
+# Environment variables & secrets
+.env
+.env.local
+
+# Output files & logs
+logs/*.log
+output_videos/*.mp4
+output_videos/*.webm
+
+# Streamlit config / cache
+.streamlit/
+
+# OS files
+.DS_Store
+Thumbs.db
+
