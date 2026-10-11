@@ -301,21 +301,86 @@ class GoogleFlowAutomation:
             page.keyboard.press("Escape")
             return False
 
-    def extract_and_download_video(self, page: Page, prompt_item: Dict[str, Any]) -> Optional[Path]:
-        """Detect and download completed video either via download button or video element src."""
+    def try_open_canvas_card(self, page: Page) -> bool:
+        """Finds and clicks the latest generated media card on the Google Flow canvas to reveal the video player."""
+        if page.locator("video").count() > 0 and page.locator("video").first.is_visible():
+            return True
+
+        card_selectors = [
+            "flow-media-card",
+            "flow-card",
+            "[data-node-id]",
+            "div[role='article']",
+            "div[class*='media-card' i]",
+            "div[class*='thumbnail' i]",
+            "div[class*='media-item' i]",
+            "div[class*='card' i]:has(img)",
+            "div[class*='card' i]:has(video)",
+            "button[aria-label*='Play' i]",
+            "div:has-text('Assembling')",
+        ]
+
+        for sel in card_selectors:
+            loc = page.locator(sel)
+            try:
+                cnt = loc.count()
+                if cnt > 0:
+                    target = loc.nth(cnt - 1)
+                    if target.is_visible():
+                        logger.info(f"Clicking latest canvas card with selector '{sel}'...")
+                        target.click(force=True)
+                        page.wait_for_timeout(1500)
+                        if page.locator("video").count() > 0 or page.locator("button[aria-label*='Download' i]").count() > 0:
+                            logger.info("Canvas card clicked successfully, video player revealed!")
+                            return True
+            except Exception as e:
+                logger.debug(f"Selector '{sel}' click notice: {e}")
+
+        try:
+            clicked = page.evaluate("""
+                () => {
+                    const selectors = [
+                        'flow-media-card', 'flow-card', '[data-node-id]',
+                        'div[role=\"article\"]', '.card', '[class*=\"media-item\"]',
+                        '[class*=\"thumbnail\"]', 'button[aria-label*=\"Play\"]'
+                    ];
+                    for (const s of selectors) {
+                        const els = Array.from(document.querySelectorAll(s));
+                        if (els.length > 0) {
+                            const target = els[els.length - 1];
+                            target.click();
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            """)
+            if clicked:
+                page.wait_for_timeout(1500)
+                if page.locator("video").count() > 0 or page.locator("button[aria-label*='Download' i]").count() > 0:
+                    logger.info("Canvas card clicked via JS evaluation, video player revealed!")
+                    return True
+        except Exception:
+            pass
+
+        return False
+
+    def extract_and_download_video(self, page: Page, prompt_item: Dict[str, Any], direct_url: Optional[str] = None) -> Optional[Path]:
+        """Detect and download completed video either via direct URL, download button, or video element src."""
         prompt_text = prompt_item.get("prompt", "")
         target_name = self.downloader.generate_filename(prompt_text=prompt_text)
 
-        # If video element is not yet in DOM, click the generated media card to open player
+        # 0. Direct captured URL from network response listener
+        if direct_url and direct_url.startswith("http"):
+            try:
+                logger.info(f"Downloading directly from captured stream URL: {direct_url[:60]}...")
+                return self.downloader.download_url(direct_url, target_filename=target_name)
+            except Exception as e:
+                logger.warning(f"Direct stream URL download notice ({e}), falling back to UI extraction...")
+
+        # If video element is not yet in DOM, click the canvas card
         if page.locator("video").count() == 0:
-            logger.info("Locating generated video card on canvas...")
-            cards = page.locator("div:has-text('Assembling'), [class*='card' i], [class*='thumbnail' i], [class*='media-item' i]")
-            if cards.count() > 0:
-                try:
-                    cards.first.click()
-                    page.wait_for_timeout(2000)
-                except Exception as e:
-                    logger.debug(f"Card click notice: {e}")
+            self.try_open_canvas_card(page)
 
         # 1. Check for <video> element inside player
         video_locator = page.locator("video")
@@ -418,32 +483,62 @@ class GoogleFlowAutomation:
         start_time = time.time()
         page.wait_for_timeout(5000)  # Initial grace period
 
+        # Sniff network responses for video streams (.mp4 or flow-content.google/video)
+        captured_stream_url: Optional[str] = None
+        def on_response(response):
+            nonlocal captured_stream_url
+            try:
+                u = response.url
+                if ".mp4" in u or "flow-content.google/video" in u:
+                    captured_stream_url = u
+                    logger.info(f"Captured live video stream from network: {u[:60]}...")
+            except Exception:
+                pass
+
+        page.on("response", on_response)
+
         generation_completed = False
-        while time.time() - start_time < GENERATION_TIMEOUT_SEC:
-            if self._stop_requested:
-                logger.warning("Generation aborted due to stop request.")
-                self.prompt_manager.update_status(prompt_id, "Pending")
-                return False
+        try:
+            while time.time() - start_time < GENERATION_TIMEOUT_SEC:
+                if self._stop_requested:
+                    logger.warning("Generation aborted due to stop request.")
+                    self.prompt_manager.update_status(prompt_id, "Pending")
+                    return False
 
-            # Check for error banners
-            error_detected = self.check_for_errors(page)
-            if error_detected:
-                logger.error(f"Generation error detected: {error_detected}")
-                self.prompt_manager.update_status(prompt_id, "Failed", error=error_detected)
-                return False
+                # Check for error banners
+                error_detected = self.check_for_errors(page)
+                if error_detected:
+                    logger.error(f"Generation error detected: {error_detected}")
+                    self.prompt_manager.update_status(prompt_id, "Failed", error=error_detected)
+                    return False
 
-            # Check if video player or download button is now available
-            videos = page.locator("video")
-            downloads = page.locator("button[aria-label*='Download' i], a[aria-label*='Download' i], button:has-text('Download')")
-
-            if (videos.count() > 0 and videos.first.is_visible()) or (downloads.count() > 0 and downloads.first.is_visible()):
-                # Ensure it's not still showing progress
-                if not self.detect_generation_in_progress(page):
-                    logger.info("Video generation completed successfully!")
+                # Check if stream URL was captured directly
+                if captured_stream_url:
+                    logger.info("Direct video stream detected from Flow CDN!")
                     generation_completed = True
                     break
 
-            time.sleep(POLL_INTERVAL_SEC)
+                # If generation progress indicators are gone, try opening the canvas card
+                elapsed = time.time() - start_time
+                if elapsed > 20 and not self.detect_generation_in_progress(page):
+                    self.try_open_canvas_card(page)
+
+                # Check if video player or download button is now available
+                videos = page.locator("video")
+                downloads = page.locator("button[aria-label*='Download' i], a[aria-label*='Download' i], button:has-text('Download')")
+
+                if (videos.count() > 0 and videos.first.is_visible()) or (downloads.count() > 0 and downloads.first.is_visible()):
+                    if not self.detect_generation_in_progress(page):
+                        logger.info("Video generation completed successfully!")
+                        generation_completed = True
+                        break
+
+                time.sleep(POLL_INTERVAL_SEC)
+        finally:
+            try:
+                page.remove_listener("response", on_response)
+            except Exception:
+                pass
 
         if not generation_completed:
             err = f"Generation timed out after {GENERATION_TIMEOUT_SEC} seconds."
@@ -453,7 +548,7 @@ class GoogleFlowAutomation:
 
         # 5. Download and verify the video
         page.wait_for_timeout(3000)
-        saved_file = self.extract_and_download_video(page, prompt_item)
+        saved_file = self.extract_and_download_video(page, prompt_item, direct_url=captured_stream_url)
         if saved_file and saved_file.exists():
             rel_path = str(saved_file.name)
             logger.info(f"Successfully saved and verified video: {rel_path}")
