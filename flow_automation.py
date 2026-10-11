@@ -363,6 +363,20 @@ class GoogleFlowAutomation:
         except Exception:
             pass
 
+        # 3. Direct HTML5 Canvas Coordinate Click (Flow cards are WebGL rendered)
+        try:
+            canvas = page.locator("canvas").first
+            if canvas.is_visible():
+                coords_to_try = [(110, 300), (150, 320), (200, 300), (250, 350), (180, 280), (120, 260)]
+                for x, y in coords_to_try:
+                    page.mouse.click(x, y)
+                    page.wait_for_timeout(800)
+                    if page.locator("video").count() > 0 or page.locator("button[aria-label*='Download' i]").count() > 0:
+                        logger.info(f"Canvas card successfully opened at coordinates ({x}, {y})!")
+                        return True
+        except Exception as e:
+            logger.debug(f"Canvas coordinate click notice: {e}")
+
         return False
 
     def extract_and_download_video(self, page: Page, prompt_item: Dict[str, Any], direct_url: Optional[str] = None) -> Optional[Path]:
@@ -518,18 +532,20 @@ class GoogleFlowAutomation:
                     generation_completed = True
                     break
 
-                # If generation progress indicators are gone, try opening the canvas card
-                elapsed = time.time() - start_time
-                if elapsed > 20 and not self.detect_generation_in_progress(page):
-                    self.try_open_canvas_card(page)
-
-                # Check if video player or download button is now available
+                # Check if video player or download button is already open
                 videos = page.locator("video")
                 downloads = page.locator("button[aria-label*='Download' i], a[aria-label*='Download' i], button:has-text('Download')")
 
                 if (videos.count() > 0 and videos.first.is_visible()) or (downloads.count() > 0 and downloads.first.is_visible()):
-                    if not self.detect_generation_in_progress(page):
-                        logger.info("Video generation completed successfully!")
+                    logger.info("Video generation completed successfully!")
+                    generation_completed = True
+                    break
+
+                # After 25 seconds of generation, try opening the canvas card
+                elapsed = time.time() - start_time
+                if elapsed > 25:
+                    if self.try_open_canvas_card(page):
+                        logger.info("Video generation completed and modal opened!")
                         generation_completed = True
                         break
 

@@ -14,11 +14,15 @@
   {
     "id": "2b096c85",
     "prompt": "A miniature Electric Blue BMW M4 Competition in a spotless white cyclorama automotive studio with soft overhead lighting. Rapid 10-second macro time-lapse cut: hands snap chrome emblem into black mesh front grille; firmly press carbon-fibre hood vents flush with audible clicks; clip on carbon side skirts and chrome door handles; polish matte-black multi-spoke wheels with glowing blue lug nut LED accents; fit glossy blue brake calipers with swift bolt-tightening; lock titanium blue-tipped quad exhausts into carbon rear diffuser; seat GT-style racing wing on trunk; trigger LED headlights and taillights startup sequence with soft chimes; quick interior touch-up on leather steering wheel; ending on a smooth cinematic wide tracking reveal of the fully customized Electric Blue BMW M4 Competition accelerating across the white studio with dramatic reflections. Hyper-detailed 8K macro cinematography, shallow depth of field, rapid time-lapse commercial pacing, diegetic ASMR mechanical clicks and engine hum only, no music.",
-    "status": "Pending",
-    "output_file": null,
+    "status": "Completed",
+    "output_file": "video_002_bmw_m4.mp4",
     "error": null,
     "created_at": "2026-10-10T17:53:34.604787+00:00",
-    "updated_at": "2026-10-11T06:45:35.477737+00:00"
+    "updated_at": "2026-10-11T07:03:22.774173+00:00",
+    "yt_uploaded": true,
+    "yt_video_id": "r5BqyQZOE_g",
+    "yt_url": "https://youtube.com/shorts/r5BqyQZOE_g",
+    "yt_publish_at": "2026-10-11T08:00:00Z"
   },
   {
     "id": "cc7efec7",
