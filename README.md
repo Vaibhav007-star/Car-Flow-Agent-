@@ -183,16 +183,21 @@ python autopilot.py --interval 60 --hunt-count 3 --upload --privacy public
 - Downloads and verifies completed `.mp4` videos.
 - Automatically uploads to YouTube Shorts with `#Shorts`, ASMR tags, and category Autos & Vehicles (`categoryId: 2`).
 
-### 3. Manual or Batch YouTube Uploads
-- **Upload single video**:
+### 3. Direct Scheduling & Publishing Options
+You can schedule videos to release automatically at future peak hours:
+- **Schedule video to publish in 3 hours**:
   ```powershell
-  python yt_uploader.py --upload output_videos/video_001_porsche_gt3_rs.mp4 --privacy public
+  python yt_uploader.py --upload output_videos/video_001_porsche_gt3_rs.mp4 --schedule-in-hours 3
   ```
-- **Upload all completed un-uploaded videos via CLI**:
+- **Schedule at exact UTC datetime**:
   ```powershell
-  python main.py --upload-yt --privacy public
+  python yt_uploader.py --upload output_videos/video_001_porsche_gt3_rs.mp4 --schedule-at 2026-10-12T18:00:00Z
   ```
-- **Via Streamlit Dashboard**: Open `http://localhost:8501`, go to **"🎥 Video Gallery"**, and click **"🚀 Upload to YT"**.
+- **Autopilot with staggered scheduling** (e.g. publishes 1 Short every 4 hours):
+  ```powershell
+  python autopilot.py --count 3 --upload --schedule-interval 4
+  ```
+- **Via Streamlit Dashboard**: Open `http://localhost:8501`, go to **"🎥 Video Gallery"**, select **"Schedule for Later"**, pick release hours, and click **"📅 Schedule Short"**.
 
 
 ## 📝 Prompt Management
