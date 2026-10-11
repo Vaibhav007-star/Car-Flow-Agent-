@@ -14,6 +14,7 @@ import requests
 
 from config import PROMPTS_FILE
 from prompt_manager import PromptManager
+from history_manager import HistoryManager, LOCKED_COLORS
 
 logger = logging.getLogger("flow_automation.trend_hunter")
 
@@ -80,8 +81,9 @@ def format_short_video_prompt(car_name: str, color: str) -> str:
 class TrendHunter:
     """Discovers viral automotive trends and converts them into production prompts."""
 
-    def __init__(self, youtube_api_key: Optional[str] = None):
+    def __init__(self, youtube_api_key: Optional[str] = None, history_manager: Optional[HistoryManager] = None):
         self.youtube_api_key = youtube_api_key or os.getenv("YOUTUBE_API_KEY")
+        self.history = history_manager or HistoryManager()
 
     def fetch_youtube_viral_cars(self, query: str = "car build asmr shorts", max_results: int = 5) -> List[Dict[str, Any]]:
         """Queries YouTube Data API v3 for high-performing automotive shorts."""
@@ -169,52 +171,101 @@ class TrendHunter:
         return results
 
     def get_trending_cars(self, max_results: int = 5) -> List[Dict[str, Any]]:
-        """Gathers trending cars across YouTube API, Google Trends, and verified viral catalog."""
+        """Gathers trending cars across YouTube API, Google Trends, and verified viral catalog.
+        
+        Guarantees zero duplicate builds: automatically rotates to unused locked colors
+        or selects fresh car models.
+        """
+        self.history.sync_from_prompts_state()
         trends = []
+        raw_candidates = []
 
         # 1. Try YouTube API if configured
-        yt_trends = self.fetch_youtube_viral_cars(max_results=max_results)
-        trends.extend(yt_trends)
+        yt_trends = self.fetch_youtube_viral_cars(max_results=max_results * 2)
+        raw_candidates.extend(yt_trends)
 
         # 2. Try Google Trends RSS
         g_trends = self.fetch_google_trends_cars()
-        trends.extend(g_trends)
+        raw_candidates.extend(g_trends)
 
-        # 3. Supplement with curated viral catalogue to ensure top quality
+        # 3. Curated viral catalog
         for item in CURATED_VIRAL_CARS:
+            raw_candidates.append({
+                "car": item["car"],
+                "color": item["default_color"],
+                "source": f"Viral Automotive Niche ({item['niche']})",
+                "details": f"Top viral rank on Reels/Shorts with {item['score']}% engagement",
+                "score": item["score"],
+            })
+
+        seen_cars = set()
+        for cand in raw_candidates:
             if len(trends) >= max_results:
                 break
-            # Avoid duplicate car models
-            if not any(t["car"].lower() in item["car"].lower() or item["car"].lower() in t["car"].lower() for t in trends):
-                trends.append({
-                    "car": item["car"],
-                    "color": item["default_color"],
-                    "source": f"Viral Automotive Niche ({item['niche']})",
-                    "details": f"Top viral rank on Reels/Shorts with {item['score']}% engagement",
-                    "score": item["score"],
-                })
 
-        # Add prompt to each result
-        for t in trends[:max_results]:
-            t["prompt"] = format_short_video_prompt(t["car"], t["color"])
+            car = cand["car"].strip()
+            car_key = car.lower()
+            if car_key in seen_cars:
+                continue
+
+            requested_color = cand.get("color", LOCKED_COLORS[0])
+            # Anti-repetition check: pick fresh, unused color
+            fresh_color = self.history.get_smart_fresh_color(car, preferred_color=requested_color)
+            if not fresh_color:
+                # All locked colors for this vehicle have already been built! Skip for diversity
+                logger.info(f"Skipping {car}: all locked colors already generated.")
+                continue
+
+            details = cand.get("details", "")
+            if fresh_color != requested_color:
+                details = f"{details} · [Color rotated: {requested_color} ➔ {fresh_color} to prevent repeat]"
+
+            cand["car"] = car
+            cand["color"] = fresh_color
+            cand["details"] = details
+            cand["prompt"] = format_short_video_prompt(car, fresh_color)
+            trends.append(cand)
+            seen_cars.add(car_key)
 
         return trends[:max_results]
 
     def queue_trending_cars(self, selected_cars: List[Dict[str, Any]], pm: Optional[PromptManager] = None) -> int:
-        """Converts selected trending cars into prompts and queues them up."""
+        """Converts selected trending cars into prompts and queues them up.
+        
+        Verifies both history ledger and active queue to prevent any duplicate execution.
+        """
         manager = pm or PromptManager()
+        self.history.sync_from_prompts_state(manager)
         queued_count = 0
+
+        # Build set of existing (car, color) pairs currently in queue
+        existing_pairs = set()
+        for p in manager.items:
+            c, col = self.history.parse_car_and_color(p.get("prompt", ""))
+            existing_pairs.add((c.lower(), col.lower()))
 
         for item in selected_cars:
             car_name = item.get("car")
-            color = item.get("color", random.choice(LOCKED_COLORS))
-            prompt_text = item.get("prompt") or format_short_video_prompt(car_name, color)
+            color = item.get("color")
+            if not car_name or not color:
+                continue
 
-            # Check if prompt text already exists in queue
-            existing_prompts = [p["prompt"].strip().lower() for p in manager.items]
-            if prompt_text.strip().lower() not in existing_prompts:
-                manager.add_prompt(prompt_text)
-                queued_count += 1
+            pair = (car_name.strip().lower(), color.strip().lower())
+
+            # 1. Skip if already completed in history ledger
+            if self.history.has_generated(car_name, color):
+                logger.info(f"Anti-repetition: Skipping {color} {car_name} (already in completed history).")
+                continue
+
+            # 2. Skip if already pending/processing in queue
+            if pair in existing_pairs:
+                logger.info(f"Anti-repetition: Skipping {color} {car_name} (already queued).")
+                continue
+
+            prompt_text = item.get("prompt") or format_short_video_prompt(car_name, color)
+            manager.add_prompt(prompt_text)
+            existing_pairs.add(pair)
+            queued_count += 1
 
         return queued_count
 

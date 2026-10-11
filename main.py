@@ -50,6 +50,8 @@ def main():
     parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="YouTube upload privacy status")
     parser.add_argument("--daily-slots", action="store_true", help="Automatically schedule uploads to the 2 daily peak slots (1:30 PM & 8:00 PM IST)")
     parser.add_argument("--schedule-interval", type=float, default=None, help="Stagger scheduled batch uploads by N hours apart")
+    parser.add_argument("--clean", action="store_true", help="Purge any duplicate pending prompts from queue")
+    parser.add_argument("--history", action="store_true", help="Display permanent generation history ledger")
     parser.add_argument("--headless", action="store_true", help="Force headless browser mode")
 
     args = parser.parse_args()
@@ -70,6 +72,31 @@ def main():
     if args.add:
         item = pm.add_prompt(args.add)
         print(f"Added prompt [{item['id']}]: '{item['prompt']}'")
+        return
+
+    if args.history:
+        from history_manager import HistoryManager
+        hm = HistoryManager()
+        hm.sync_from_prompts_state(pm)
+        print("\n" + "=" * 50)
+        print("      GENERATION HISTORY LEDGER (UNIQUE BUILDS)    ")
+        print("=" * 50)
+        if not hm.entries:
+            print("No completed builds recorded yet.")
+        else:
+            for i, e in enumerate(hm.entries, 1):
+                yt_status = f" -> YT: {e['yt_url']}" if e.get("yt_url") else ""
+                print(f"{i:2d}. {e['color']} {e['car']} ({e['output_file']}){yt_status}")
+        print("=" * 50 + "\n")
+        return
+
+    if args.clean:
+        from history_manager import HistoryManager
+        hm = HistoryManager()
+        hm.sync_from_prompts_state(pm)
+        count = hm.clean_queue_duplicates(pm)
+        print(f"Purged {count} duplicate pending prompts from queue.")
+        print_status(pm)
         return
 
     if args.retry:

@@ -22,6 +22,7 @@ from browser_manager import BrowserManager
 from downloader import VideoDownloader
 from flow_automation import GoogleFlowAutomation
 from trend_hunter import TrendHunter
+from history_manager import HistoryManager
 
 # Configure autopilot logging
 logger = logging.getLogger("flow_automation.autopilot")
@@ -48,7 +49,8 @@ class AutopilotRunner:
         self.daily_slots = daily_slots
         self.stop_requested = False
         self.pm = PromptManager()
-        self.th = TrendHunter()
+        self.hm = HistoryManager()
+        self.th = TrendHunter(history_manager=self.hm)
         self.dl = VideoDownloader()
 
     def run_single_cycle(self, viral_count: int = 2) -> dict:
@@ -58,8 +60,14 @@ class AutopilotRunner:
         logger.info(f"🚀 STARTING AUTOPILOT CYCLE: {cycle_start.strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info("===================================================================")
 
+        # 0. Anti-Repetition Pre-check
+        self.hm.sync_from_prompts_state(self.pm)
+        cleaned = self.hm.clean_queue_duplicates(self.pm)
+        if cleaned > 0:
+            logger.info(f"Anti-repetition: Purged {cleaned} duplicate prompts from generation queue.")
+
         # 1. Trend Hunting
-        logger.info(f"[Step 1/3] Hunting top {viral_count} viral cars...")
+        logger.info(f"[Step 1/3] Hunting top {viral_count} viral cars (excluding past builds)...")
         trends = self.th.get_trending_cars(max_results=viral_count)
         if not trends:
             logger.warning("No viral trends discovered in this cycle. Retrying on next tick.")
@@ -68,7 +76,7 @@ class AutopilotRunner:
         # 2. Auto-Queue Prompts
         logger.info(f"[Step 2/3] Synthesizing Car Promot.pdf prompts for {len(trends)} cars...")
         added_count = self.th.queue_trending_cars(trends, self.pm)
-        logger.info(f"Queued {added_count} new prompts into the generation queue.")
+        logger.info(f"Queued {added_count} new non-duplicate prompts into generation queue.")
 
         # 3. Automated Flow Generation
         logger.info(f"[Step 3/3] Launching Google Flow automation (headless={self.headless})...")
@@ -98,6 +106,9 @@ class AutopilotRunner:
                 logger.info(f"Uploaded/Scheduled {len(uploaded)} videos to YouTube Shorts.")
             except Exception as e:
                 logger.warning(f"YouTube auto-upload notice: {e}")
+
+        # Update persistent history ledger
+        self.hm.sync_from_prompts_state(self.pm)
 
         cycle_end = datetime.now()
         duration_min = (cycle_end - cycle_start).total_seconds() / 60

@@ -1,0 +1,18 @@
+[
+  {
+    "car": "Porsche 911 GT3 RS",
+    "color": "Racing Red",
+    "output_file": "video_001_porsche_gt3_rs.mp4",
+    "yt_uploaded": true,
+    "yt_url": "https://youtube.com/shorts/sSRj3jNvnvY",
+    "recorded_at": "2026-10-11T07:21:57.443643+00:00"
+  },
+  {
+    "car": "BMW M4 Competition",
+    "color": "Electric Blue",
+    "output_file": "video_002_bmw_m4.mp4",
+    "yt_uploaded": true,
+    "yt_url": "https://youtube.com/shorts/r5BqyQZOE_g",
+    "recorded_at": "2026-10-11T07:21:57.443643+00:00"
+  }
+]

@@ -142,6 +142,16 @@ Open your browser to `http://localhost:8501`. From the dashboard you can:
   python main.py --add "A miniature Racing Red Porsche 911 GT3 RS..."
   ```
 
+- **View Generation History (Anti-Repetition Vault)**:
+  ```powershell
+  python main.py --history
+  ```
+
+- **Clean & Purge Duplicate Prompts from Queue**:
+  ```powershell
+  python main.py --clean
+  ```
+
 - **Retry Failed Prompts**:
   ```powershell
   python main.py --retry --run
@@ -213,6 +223,28 @@ The system automatically optimizes for global viewer engagement by targeting the
 - **Descriptions**: Headphone prompts, engagement question ("Which car should we customize next?"), and targeted hashtags.
 - **Tags**: 20+ search volume tags including ASMR car clicks, diecast restoration, model assembly, and specific vehicle keywords.
 
+---
+
+## 🛡️ Anti-Repetition & History Memory Engine
+
+To protect **Google Flow generation tokens**, avoid hitting daily compute limits, conserve **YouTube API upload quota**, and keep the YouTube channel fresh with non-repetitive content, the system incorporates an intelligent memory ledger (`history_manager.py` & `generation_history.json`).
+
+### Key Capabilities:
+1. **Permanent History Ledger (`generation_history.json`)**:
+   - Records every successfully generated car model, locked color, output filename, and YouTube Short URL.
+   - Prevents ever re-generating the same vehicle in the same color.
+2. **Smart Dynamic Color Cycling**:
+   - Strictly enforces the **10 locked colors** from `Car Promot.pdf`:
+     `Pearl White`, `Jet Black`, `Racing Red`, `Electric Blue`, `Matte Grey`, `Metallic Silver`, `Deep Emerald Green`, `Sunset Orange`, `Titanium Gold`, `Midnight Purple`.
+   - When a viral car (e.g., *Porsche 911 GT3 RS*) trends multiple times, the Trend Hunter checks history and automatically selects the next **unused** color from the locked palette instead of discarding the car or producing a duplicate.
+3. **Queue Deduplication**:
+   - `clean_queue_duplicates()` purges redundant pending prompts from `prompts_state.json` before any compute is spent.
+   - Autopilot runs this purge automatically before each cycle.
+4. **Streamlit UI Integration**:
+   - The **"🛡️ History & Memory"** tab visualizes unique vehicles built, direct YouTube Short links, and color palette usage distribution.
+   - Sidebar includes a one-click **"🧹 Purge Duplicates"** button.
+
+---
 
 ## 📝 Prompt Management
 

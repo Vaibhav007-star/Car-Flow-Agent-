@@ -23,10 +23,12 @@ from config import FLOW_URL, OUTPUT_DIR, LOGS_DIR, USER_DATA_DIR, YOUTUBE_API_KE
 from prompt_manager import PromptManager
 from downloader import VideoDownloader
 from trend_hunter import TrendHunter, LOCKED_COLORS, format_short_video_prompt
+from history_manager import HistoryManager
 
 # Initialize managers
 pm = PromptManager()
 downloader = VideoDownloader()
+hm = HistoryManager()
 
 # Session state initialization
 if "running_process" not in st.session_state:
@@ -81,12 +83,13 @@ st.caption("Automated video generation, prompt scheduling, and local media archi
 
 summary = pm.get_summary()
 
-col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+col_m1, col_m2, col_m3, col_m4, col_m5, col_m6 = st.columns(6)
 col_m1.metric("Total Prompts", summary["Total"])
 col_m2.metric("⏳ Pending", summary["Pending"])
 col_m3.metric("⚙️ Processing", summary["Processing"])
 col_m4.metric("✅ Completed", summary["Completed"])
 col_m5.metric("❌ Failed", summary["Failed"])
+col_m6.metric("🛡️ History Vault", len(hm.entries))
 
 st.divider()
 
@@ -126,6 +129,14 @@ if st.sidebar.button("🌐 Open Browser for Login", use_container_width=True):
     st.sidebar.success("Browser opened! Please log in, then close the browser window.")
 
 st.sidebar.subheader("🔄 Queue Operations")
+if st.sidebar.button("🧹 Purge Duplicates", use_container_width=True, help="Remove duplicate car+color combos from pending queue"):
+    purged = hm.clean_queue_duplicates(pm)
+    if purged:
+        st.sidebar.success(f"Purged {purged} duplicate prompt(s)!")
+    else:
+        st.sidebar.info("Queue is clean! No duplicates found.")
+    st.rerun()
+
 if st.sidebar.button("🔁 Retry Failed Prompts", use_container_width=True):
     retried = pm.retry_failed()
     st.sidebar.success(f"Reset {retried} failed prompts to Pending.")
@@ -147,9 +158,10 @@ with st.sidebar.form("add_prompt_form", clear_on_submit=True):
 
 
 # --- Main Tabs ---
-tab_queue, tab_hunter, tab_gallery, tab_logs, tab_docs = st.tabs([
+tab_queue, tab_hunter, tab_history, tab_gallery, tab_logs, tab_docs = st.tabs([
     "📋 Prompt Queue",
     "🔥 Viral Trend Hunter",
+    "🛡️ History & Memory",
     "🎥 Video Gallery",
     "📜 Live Logs",
     "📖 Documentation & Setup"
@@ -200,6 +212,9 @@ with tab_hunter:
                 with col_c1:
                     st.markdown(f"### {t['car']}")
                     st.caption(f"Source: **{t['source']}** · Virality Score: **{t['score']}/100**")
+                    used_colors = hm.get_used_colors(t["car"])
+                    if used_colors:
+                        st.caption(f"🛡️ Already built in: *{', '.join(used_colors)}*")
                     st.write(t.get("details", ""))
                 with col_c2:
                     current_color = t.get("color", LOCKED_COLORS[0])
@@ -222,7 +237,7 @@ with tab_hunter:
                         if added:
                             st.success(f"Queued {t['car']}!")
                         else:
-                            st.warning("Already in queue!")
+                            st.warning("Already in queue or built!")
                         st.rerun()
 
 with tab_queue:
@@ -260,6 +275,53 @@ with tab_queue:
                     if st.button("🗑️", key=f"del_{item['id']}", help="Delete prompt"):
                         pm.remove_prompt(item["id"])
                         st.rerun()
+
+with tab_history:
+    st.subheader("🛡️ Generation Ledger & Anti-Repetition Vault")
+    st.caption("Permanent record of all generated vehicles and color combinations to prevent duplicate renders, conserve Google Flow computing limits, and save YouTube quota.")
+
+    col_h_act1, col_h_act2 = st.columns([3, 1])
+    with col_h_act1:
+        st.info(f"The vault currently holds **{len(hm.entries)} unique car builds**. New trends automatically rotate to fresh colors from the 10 locked palette.")
+    with col_h_act2:
+        if st.button("🔄 Sync with Queue", use_container_width=True):
+            added = hm.sync_from_prompts_state(pm)
+            st.success(f"Synced! Added {added} items.")
+            st.rerun()
+
+    if not hm.entries:
+        st.info("No builds recorded in history ledger yet.")
+    else:
+        st.markdown("### 🏎️ Completed Vehicles in History")
+        for idx, entry in enumerate(hm.entries):
+            with st.container(border=True):
+                c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
+                with c1:
+                    st.markdown(f"**#{idx+1} {entry['car']}**")
+                    st.caption(f"Color: **{entry['color']}**")
+                with c2:
+                    st.code(entry.get("output_file", "N/A"))
+                with c3:
+                    if entry.get("yt_uploaded") and entry.get("yt_url"):
+                        st.markdown(f"🎬 [YouTube Short]({entry['yt_url']})")
+                    else:
+                        st.caption("Not uploaded to YT yet")
+                with c4:
+                    recorded_time = entry.get("recorded_at", "")[:19].replace("T", " ")
+                    st.caption(f"Recorded: {recorded_time}")
+
+        st.divider()
+        st.markdown("### 🎨 Color Palette Utilization")
+        color_counts = {c: 0 for c in LOCKED_COLORS}
+        for entry in hm.entries:
+            col_name = entry.get("color")
+            if col_name in color_counts:
+                color_counts[col_name] += 1
+
+        palette_cols = st.columns(5)
+        for i, (col_name, cnt) in enumerate(color_counts.items()):
+            col_idx = i % 5
+            palette_cols[col_idx].metric(col_name, f"{cnt} built")
 
 with tab_gallery:
     st.subheader("Downloaded Videos (output_videos/)")
@@ -352,6 +414,7 @@ with tab_gallery:
                                             if res.get("publish_at"):
                                                 matched_item["yt_publish_at"] = res["publish_at"]
                                             pm.save()
+                                            hm.sync_from_prompts_state(pm)
                                         if res.get("publish_at"):
                                             st.success(f"Scheduled for {res['publish_at']}! [View Short]({res['url']})")
                                         else:
