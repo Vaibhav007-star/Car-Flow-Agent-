@@ -291,12 +291,15 @@ with tab_gallery:
                         with col_yt1:
                             upload_mode = st.selectbox(
                                 "Publish Mode",
-                                ["Public (Instant)", "Schedule for Later", "Unlisted", "Private"],
+                                ["Public (Instant)", "Daily Peak Slot (1:30 PM / 8:00 PM IST)", "Custom Schedule Hours", "Unlisted", "Private"],
                                 key=f"mode_{v_path.name}",
                             )
                         with col_yt2:
+                            from yt_uploader import YouTubeUploader, YouTubeSEO, get_next_daily_slots
                             sched_hours = None
-                            if upload_mode == "Schedule for Later":
+                            target_publish_at = None
+
+                            if upload_mode == "Custom Schedule Hours":
                                 sched_hours = st.number_input(
                                     "Release in (hours):",
                                     min_value=0.5,
@@ -305,18 +308,28 @@ with tab_gallery:
                                     step=0.5,
                                     key=f"sched_{v_path.name}",
                                 )
+                            elif upload_mode == "Daily Peak Slot (1:30 PM / 8:00 PM IST)":
+                                target_publish_at = get_next_daily_slots(count=1)[0]
+                                from datetime import datetime, timezone, timedelta
+                                dt_utc = datetime.strptime(target_publish_at, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+                                dt_ist = dt_utc + timedelta(hours=5, minutes=30)
+                                st.caption(f"Target: **{dt_ist.strftime('%d %b, %I:%M %p IST')}**")
+
                             st.write("")
-                            upload_label = "📅 Schedule Short" if upload_mode == "Schedule for Later" else "🚀 Upload to YT"
+                            upload_label = "📅 Schedule Peak Slot" if "Peak Slot" in upload_mode else ("📅 Schedule Short" if "Schedule" in upload_mode else "🚀 Upload to YT")
                             if st.button(upload_label, key=f"yt_btn_{v_path.name}", use_container_width=True):
-                                from yt_uploader import YouTubeUploader
                                 uploader = YouTubeUploader()
-                                with st.spinner("Processing YouTube Shorts upload..."):
-                                    title = f"Customizing {v_path.stem.replace('video_', '').replace('_', ' ').title()} ASMR #Shorts"
-                                    desc = f"{matched_item.get('prompt', '') if matched_item else ''}\n\n#Shorts #ASMR #CarCustomization"
-                                    
+                                with st.spinner("Optimizing SEO & Uploading to YouTube Shorts..."):
+                                    prompt_str = matched_item.get("prompt", "") if matched_item else ""
+                                    car_name, color = YouTubeSEO.extract_car_and_color(prompt_str, v_path.name)
+                                    title = YouTubeSEO.generate_title(car_name, color)
+                                    desc = YouTubeSEO.generate_description(car_name, color, prompt_str)
+                                    tags = YouTubeSEO.generate_tags(car_name, color)
+
                                     privacy_map = {
                                         "Public (Instant)": "public",
-                                        "Schedule for Later": "private",
+                                        "Daily Peak Slot (1:30 PM / 8:00 PM IST)": "private",
+                                        "Custom Schedule Hours": "private",
                                         "Unlisted": "unlisted",
                                         "Private": "private",
                                     }
@@ -327,8 +340,10 @@ with tab_gallery:
                                             v_path,
                                             title=title,
                                             description=desc,
+                                            tags=tags,
                                             privacy_status=selected_priv,
-                                            schedule_in_hours=sched_hours if upload_mode == "Schedule for Later" else None,
+                                            publish_at=target_publish_at,
+                                            schedule_in_hours=sched_hours if upload_mode == "Custom Schedule Hours" else None,
                                         )
                                         if matched_item:
                                             matched_item["yt_uploaded"] = True

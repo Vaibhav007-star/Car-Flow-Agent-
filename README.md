@@ -183,21 +183,35 @@ python autopilot.py --interval 60 --hunt-count 3 --upload --privacy public
 - Downloads and verifies completed `.mp4` videos.
 - Automatically uploads to YouTube Shorts with `#Shorts`, ASMR tags, and category Autos & Vehicles (`categoryId: 2`).
 
-### 3. Direct Scheduling & Publishing Options
-You can schedule videos to release automatically at future peak hours:
-- **Schedule video to publish in 3 hours**:
+### 3. Direct Scheduling & 2 Daily Peak Slots
+The system automatically optimizes for global viewer engagement by targeting the **2 daily peak traffic windows**:
+- **Slot 1**: `1:30 PM IST` (`08:00 UTC` / `4:00 AM EST` - European lunch & US morning feed)
+- **Slot 2**: `8:00 PM IST` (`14:30 UTC` / `10:30 AM EST` - India/Asia prime evening & US midday peak)
+
+#### Commands:
+- **Autopilot with Daily Peak Slots (Hands-free 2 Shorts/day)**:
+  ```powershell
+  python autopilot.py --count 2 --upload --daily-slots
+  ```
+- **Batch Upload all completed videos to Daily Peak Slots**:
+  ```powershell
+  python yt_uploader.py --all --daily-slots
+  ```
+- **Schedule video to publish in N hours**:
   ```powershell
   python yt_uploader.py --upload output_videos/video_001_porsche_gt3_rs.mp4 --schedule-in-hours 3
   ```
-- **Schedule at exact UTC datetime**:
-  ```powershell
-  python yt_uploader.py --upload output_videos/video_001_porsche_gt3_rs.mp4 --schedule-at 2026-10-12T18:00:00Z
-  ```
-- **Autopilot with staggered scheduling** (e.g. publishes 1 Short every 4 hours):
-  ```powershell
-  python autopilot.py --count 3 --upload --schedule-interval 4
-  ```
-- **Via Streamlit Dashboard**: Open `http://localhost:8501`, go to **"🎥 Video Gallery"**, select **"Schedule for Later"**, pick release hours, and click **"📅 Schedule Short"**.
+- **Via Streamlit Dashboard**: Open `http://localhost:8501`, go to **"🎥 Video Gallery"**, select **"Daily Peak Slot (1:30 PM / 8:00 PM IST)"**, and click **"📅 Schedule Peak Slot"**.
+
+### 4. Viral SEO Title & Tag Engine
+`YouTubeSEO` automatically writes high-converting metadata for every Short:
+- **Rotating Viral Hooks**:
+  - `Satisfying {Car} Assembly ASMR 🎧 #Shorts`
+  - `Rate this {Car} build 1-10? 🔥 #Shorts`
+  - `Wait for the exhaust sound... {Car} 🔊 #Shorts`
+  - `Building the Ultimate {Color} {Car} in 8s ⚡ #Shorts`
+- **Descriptions**: Headphone prompts, engagement question ("Which car should we customize next?"), and targeted hashtags.
+- **Tags**: 20+ search volume tags including ASMR car clicks, diecast restoration, model assembly, and specific vehicle keywords.
 
 
 ## 📝 Prompt Management

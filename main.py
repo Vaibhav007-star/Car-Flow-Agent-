@@ -48,6 +48,8 @@ def main():
     parser.add_argument("--hunt", type=int, nargs="?", const=3, help="Hunt for top N viral cars and auto-queue them (default 3)")
     parser.add_argument("--upload-yt", action="store_true", help="Upload completed un-uploaded videos to YouTube Shorts")
     parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="YouTube upload privacy status")
+    parser.add_argument("--daily-slots", action="store_true", help="Automatically schedule uploads to the 2 daily peak slots (1:30 PM & 8:00 PM IST)")
+    parser.add_argument("--schedule-interval", type=float, default=None, help="Stagger scheduled batch uploads by N hours apart")
     parser.add_argument("--headless", action="store_true", help="Force headless browser mode")
 
     args = parser.parse_args()
@@ -78,11 +80,17 @@ def main():
         from yt_uploader import YouTubeUploader
         uploader = YouTubeUploader()
         print("\nChecking for completed videos to upload to YouTube Shorts...")
-        results = uploader.auto_upload_completed_videos(privacy_status=args.privacy, pm=pm)
+        results = uploader.auto_upload_completed_videos(
+            privacy_status=args.privacy,
+            use_daily_slots=args.daily_slots,
+            schedule_interval_hours=args.schedule_interval,
+            pm=pm,
+        )
         if results:
-            print(f"[SUCCESS] Uploaded {len(results)} videos to YouTube Shorts:")
+            print(f"[SUCCESS] Processed {len(results)} videos for YouTube Shorts:")
             for r in results:
-                print(f"- {r['title']} -> {r['url']}")
+                sched = f" (Scheduled: {r['publish_at']})" if r.get('publish_at') else ""
+                print(f"- {r['title']} -> {r['url']}{sched}")
         else:
             print("No pending completed videos found for upload.")
         return
@@ -119,11 +127,16 @@ def main():
             print("\nExecution finished.")
             print_status(pm)
             if args.upload_yt:
-                print("\nAutomatically uploading generated videos to YouTube Shorts...")
+                print("\nAutomatically uploading/scheduling generated videos to YouTube Shorts...")
                 from yt_uploader import YouTubeUploader
                 uploader = YouTubeUploader()
-                results = uploader.auto_upload_completed_videos(privacy_status=args.privacy, pm=pm)
-                print(f"[SUCCESS] Uploaded {len(results)} videos to YouTube Shorts.")
+                results = uploader.auto_upload_completed_videos(
+                    privacy_status=args.privacy,
+                    use_daily_slots=args.daily_slots,
+                    schedule_interval_hours=args.schedule_interval,
+                    pm=pm,
+                )
+                print(f"[SUCCESS] Processed {len(results)} videos for YouTube Shorts.")
         except KeyboardInterrupt:
             print("\nStopped by user.")
             automation.request_stop()

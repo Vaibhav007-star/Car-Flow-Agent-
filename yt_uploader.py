@@ -27,6 +27,148 @@ logger = logging.getLogger("flow_automation.yt_uploader")
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 CLIENT_SECRETS_FILE = BASE_DIR / "client_secrets.json"
 TOKEN_FILE = BASE_DIR / "token.json"
+# Daily Peak Slots in UTC:
+# Slot 1: 1:30 PM IST = 08:00 UTC
+# Slot 2: 8:00 PM IST = 14:30 UTC
+DAILY_SLOTS_UTC = [(8, 0), (14, 30)]
+
+
+def get_next_daily_slots(count: int = 1, min_lead_minutes: int = 45) -> List[str]:
+    """Computes upcoming target ISO 8601 timestamps matching the 2 daily peak slots (1:30 PM & 8:00 PM IST).
+    
+    Guarantees at least min_lead_minutes buffer from now to ensure YouTube has processing headroom.
+    """
+    now_utc = datetime.now(timezone.utc)
+    slots: List[str] = []
+    day_offset = 0
+
+    while len(slots) < count:
+        target_day = (now_utc + timedelta(days=day_offset)).date()
+        for hour, minute in DAILY_SLOTS_UTC:
+            candidate = datetime(target_day.year, target_day.month, target_day.day, hour, minute, tzinfo=timezone.utc)
+            if candidate > now_utc + timedelta(minutes=min_lead_minutes):
+                slots.append(candidate.strftime("%Y-%m-%dT%H:%M:%SZ"))
+                if len(slots) == count:
+                    break
+        day_offset += 1
+
+    return slots
+
+
+class YouTubeSEO:
+    """Generates high-CTR viral titles, rich SEO descriptions, and high-ranking tags for YouTube Shorts."""
+
+    LOCKED_COLORS = [
+        "Racing Red", "Electric Blue", "Midnight Purple", "Sunset Orange",
+        "Emerald Green", "Frozen Silver", "Solar Yellow", "Gloss White",
+        "Matte Carbon", "Candy Apple Red",
+    ]
+
+    VIRAL_HOOKS = [
+        "Satisfying {car} Assembly ASMR 🎧 #Shorts",
+        "Rate this {car} build 1-10? 🔥 #Shorts",
+        "Wait for the exhaust sound... {car} 🔊 #Shorts",
+        "Building the Ultimate {color} {car} in 8s ⚡ #Shorts",
+        "The Most Satisfying {car} Build Ever 🤤 #Shorts",
+    ]
+
+    @classmethod
+    def extract_car_and_color(cls, prompt: str = "", filename: str = "") -> tuple[str, str]:
+        """Extracts clean car name and color from prompt text or filename."""
+        matched_color = "Custom"
+        car_name = ""
+
+        if prompt:
+            import re
+            m = re.search(r"A miniature (.*?) in a spotless", prompt, re.IGNORECASE)
+            if m:
+                target_str = m.group(1).strip()
+                for c in cls.LOCKED_COLORS:
+                    if target_str.lower().startswith(c.lower()):
+                        matched_color = c
+                        car_name = target_str[len(c):].strip()
+                        break
+                if not car_name:
+                    car_name = target_str
+
+        if not car_name and filename:
+            clean_stem = Path(filename).stem
+            parts = clean_stem.replace("video_", "").split("_")
+            car_parts = [p for p in parts if not p.isdigit()]
+            car_name = " ".join(car_parts).title()
+
+        car_name = car_name or "Supercar"
+        return car_name, matched_color
+
+    @classmethod
+    def generate_title(cls, car_name: str, color: str = "", variant_idx: Optional[int] = None) -> str:
+        """Generates a viral hook title under 85 characters with #Shorts."""
+        if variant_idx is None:
+            variant_idx = abs(hash(car_name)) % len(cls.VIRAL_HOOKS)
+        else:
+            variant_idx = variant_idx % len(cls.VIRAL_HOOKS)
+
+        template = cls.VIRAL_HOOKS[variant_idx]
+        title = template.format(car=car_name, color=color or "Custom")
+        if "#shorts" not in title.lower():
+            title = f"{title} #Shorts"
+        return title[:95]
+
+    @classmethod
+    def generate_description(cls, car_name: str, color: str = "", prompt: str = "") -> str:
+        """Generates high-retention SEO description with timestamps, CTA, and keyword hashtags."""
+        car_tag = car_name.replace(" ", "").replace("-", "")
+        desc = (
+            f"Satisfying ASMR customization and assembly of the miniature {color} {car_name}.\n"
+            f"🎧 Wear headphones for the best binaural mechanical clicks, ratchet sounds, and exhaust rumble!\n\n"
+            f"💬 Which dream supercar should we customize next? Drop your pick in the comments below! 👇\n\n"
+            f"#Shorts #ASMR #CarCustomization #{car_tag} #Diecast #Satisfying #Supercars #Viral"
+        )
+        return desc
+
+    @classmethod
+    def generate_tags(cls, car_name: str, color: str = "") -> List[str]:
+        """Generates ranked tag cluster targeting high search volume and Shorts feed velocity."""
+        clean_car = car_name.strip()
+        brand = clean_car.split()[0] if clean_car else ""
+        car_tag = clean_car.replace(" ", "")
+
+        candidates = [
+            "Shorts",
+            "YouTube Shorts",
+            "viral shorts",
+            "satisfying",
+            "oddly satisfying",
+            "ASMR",
+            "car ASMR",
+            "car customization",
+            "miniature car",
+            "miniature car assembly",
+            "diecast car",
+            "diecast restoration",
+            "diecast customization",
+            "custom car build",
+            "exhaust sound",
+            "engine startup",
+            "supercars",
+            "hypercar",
+            clean_car,
+            f"{clean_car} ASMR",
+            f"{clean_car} sound",
+            brand,
+            car_tag,
+        ]
+        if color:
+            candidates.append(f"{color} {clean_car}")
+
+        seen = set()
+        final_tags = []
+        for t in candidates:
+            tc = t.strip()
+            if tc and tc.lower() not in seen:
+                seen.add(tc.lower())
+                final_tags.append(tc)
+        return final_tags
 
 
 class YouTubeUploader:
@@ -170,13 +312,27 @@ class YouTubeUploader:
     def auto_upload_completed_videos(
         self,
         privacy_status: str = "public",
+        use_daily_slots: bool = False,
         schedule_interval_hours: Optional[float] = None,
         pm: Optional[PromptManager] = None,
     ) -> List[Dict[str, Any]]:
-        """Scans prompt state for completed videos that haven't been uploaded yet, and uploads or schedules them."""
+        """Scans prompt state for completed videos that haven't been uploaded yet, and uploads or schedules them.
+        
+        Uses YouTubeSEO for high-ranking titles, descriptions, and tag clusters.
+        """
         manager = pm or PromptManager()
         uploaded_results = []
         unuploaded_count = 0
+
+        # Count pending videos to allocate daily slots if requested
+        pending_items = [
+            it for it in manager.items
+            if it.get("status") == "Completed" and it.get("output_file") and not it.get("yt_uploaded", False)
+        ]
+        
+        daily_slot_timestamps: List[str] = []
+        if use_daily_slots and pending_items:
+            daily_slot_timestamps = get_next_daily_slots(count=len(pending_items))
 
         for item in manager.items:
             output_file = item.get("output_file")
@@ -187,17 +343,19 @@ class YouTubeUploader:
                 if full_path.exists():
                     prompt_text = item.get("prompt", "")
 
-                    # Extract car name from prompt for clean title
-                    title = f"Customizing {output_file.replace('video_', '').replace('.mp4', '').replace('_', ' ').title()} ASMR #Shorts"
-                    desc = (
-                        f"{prompt_text}\n\n"
-                        "🎧 Wear headphones for the best ASMR experience.\n"
-                        "#Shorts #ASMR #CarCustomization #ViralCars #Supercars"
-                    )
+                    # Extract car and color, then generate dynamic SEO metadata
+                    car_name, color = YouTubeSEO.extract_car_and_color(prompt_text, full_path.name)
+                    title = YouTubeSEO.generate_title(car_name, color, variant_idx=unuploaded_count)
+                    desc = YouTubeSEO.generate_description(car_name, color, prompt_text)
+                    tags = YouTubeSEO.generate_tags(car_name, color)
 
-                    # Compute staggered schedule if requested
+                    # Determine schedule target
                     sched_hours = None
-                    if schedule_interval_hours and schedule_interval_hours > 0:
+                    target_publish_at = None
+
+                    if use_daily_slots and unuploaded_count < len(daily_slot_timestamps):
+                        target_publish_at = daily_slot_timestamps[unuploaded_count]
+                    elif schedule_interval_hours and schedule_interval_hours > 0:
                         sched_hours = (unuploaded_count + 1) * schedule_interval_hours
 
                     try:
@@ -205,7 +363,9 @@ class YouTubeUploader:
                             full_path,
                             title=title,
                             description=desc,
+                            tags=tags,
                             privacy_status=privacy_status,
+                            publish_at=target_publish_at,
                             schedule_in_hours=sched_hours,
                         )
                         item["yt_uploaded"] = True
@@ -228,10 +388,11 @@ def main():
     parser = argparse.ArgumentParser(description="YouTube Shorts Auto-Uploader & Scheduler")
     parser.add_argument("--auth", action="store_true", help="Run one-time YouTube OAuth authorization")
     parser.add_argument("--upload", type=str, help="Upload a specific video file path")
-    parser.add_argument("--title", type=str, default="Viral Miniature Car Assembly ASMR", help="Video title")
+    parser.add_argument("--title", type=str, help="Video title (auto-generated if omitted)")
     parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="Privacy status (default public)")
     parser.add_argument("--schedule-in-hours", type=float, help="Schedule release N hours from now (e.g. 2 or 5.5)")
     parser.add_argument("--schedule-at", type=str, help="Schedule release at specific UTC timestamp (YYYY-MM-DDTHH:MM:SSZ)")
+    parser.add_argument("--daily-slots", action="store_true", help="Schedule to next 2 daily peak slots (1:30 PM & 8:00 PM IST)")
     parser.add_argument("--schedule-interval", type=float, help="Stagger scheduled batch uploads by N hours apart")
     parser.add_argument("--all", action="store_true", help="Upload all un-uploaded completed videos from queue")
 
@@ -246,12 +407,22 @@ def main():
 
     if args.upload:
         p = Path(args.upload)
+        car_name, color = YouTubeSEO.extract_car_and_color("", p.name)
+        title = args.title or YouTubeSEO.generate_title(car_name, color)
+        desc = YouTubeSEO.generate_description(car_name, color)
+        tags = YouTubeSEO.generate_tags(car_name, color)
+
+        publish_target = args.schedule_at
+        if args.daily_slots:
+            publish_target = get_next_daily_slots(count=1)[0]
+
         res = uploader.upload_short(
             p,
-            title=args.title,
-            description="Generated via Google Flow",
+            title=title,
+            description=desc,
+            tags=tags,
             privacy_status=args.privacy,
-            publish_at=args.schedule_at,
+            publish_at=publish_target,
             schedule_in_hours=args.schedule_in_hours,
         )
         if res.get("publish_at"):
@@ -264,6 +435,7 @@ def main():
         print("\nChecking for completed videos to upload...")
         results = uploader.auto_upload_completed_videos(
             privacy_status=args.privacy,
+            use_daily_slots=args.daily_slots,
             schedule_interval_hours=args.schedule_interval,
         )
         print(f"[SUCCESS] Processed {len(results)} videos.")

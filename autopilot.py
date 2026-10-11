@@ -40,11 +40,12 @@ if not logger.handlers:
 class AutopilotRunner:
     """Orchestrates end-to-end hands-free content generation cycles."""
 
-    def __init__(self, headless: bool = False, auto_upload: bool = False, privacy_status: str = "public", schedule_interval: Optional[float] = None):
+    def __init__(self, headless: bool = False, auto_upload: bool = False, privacy_status: str = "public", schedule_interval: Optional[float] = None, daily_slots: bool = False):
         self.headless = headless
         self.auto_upload = auto_upload
         self.privacy_status = privacy_status
         self.schedule_interval = schedule_interval
+        self.daily_slots = daily_slots
         self.stop_requested = False
         self.pm = PromptManager()
         self.th = TrendHunter()
@@ -90,6 +91,7 @@ class AutopilotRunner:
                 uploader = YouTubeUploader()
                 uploaded = uploader.auto_upload_completed_videos(
                     privacy_status=self.privacy_status,
+                    use_daily_slots=self.daily_slots,
                     schedule_interval_hours=self.schedule_interval,
                     pm=self.pm,
                 )
@@ -140,6 +142,7 @@ def main():
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode without opening GUI window")
     parser.add_argument("--upload", action="store_true", help="Automatically upload completed videos to YouTube Shorts")
     parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="Privacy status for YouTube uploads (default: public)")
+    parser.add_argument("--daily-slots", action="store_true", help="Automatically schedule videos to next 2 daily peak slots (1:30 PM & 8:00 PM IST)")
     parser.add_argument("--schedule-interval", type=float, default=None, help="Stagger scheduled video release by N hours apart (e.g. 2 or 4)")
 
     args = parser.parse_args()
@@ -148,6 +151,7 @@ def main():
         auto_upload=args.upload,
         privacy_status=args.privacy,
         schedule_interval=args.schedule_interval,
+        daily_slots=args.daily_slots,
     )
 
     # Handle Ctrl+C gracefully
