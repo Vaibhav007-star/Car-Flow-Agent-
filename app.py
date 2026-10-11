@@ -283,6 +283,32 @@ with tab_gallery:
                     matched_item = video_to_prompt.get(v_path.name)
                     if matched_item:
                         st.caption(f"Prompt: *{matched_item['prompt']}*")
+                        if matched_item.get("yt_uploaded"):
+                            st.success(f"🎬 YouTube Short: [{matched_item.get('yt_url')}]({matched_item.get('yt_url')})")
+
+                    if not (matched_item and matched_item.get("yt_uploaded")):
+                        col_yt1, col_yt2 = st.columns([1, 1])
+                        with col_yt1:
+                            priv = st.selectbox("Privacy", ["public", "unlisted", "private"], key=f"priv_{v_path.name}")
+                        with col_yt2:
+                            st.write("")
+                            if st.button("🚀 Upload to YT", key=f"yt_btn_{v_path.name}", use_container_width=True):
+                                from yt_uploader import YouTubeUploader
+                                uploader = YouTubeUploader()
+                                with st.spinner("Uploading video to YouTube Shorts..."):
+                                    title = f"Customizing {v_path.stem.replace('video_', '').replace('_', ' ').title()} ASMR #Shorts"
+                                    desc = f"{matched_item.get('prompt', '') if matched_item else ''}\n\n#Shorts #ASMR #CarCustomization"
+                                    try:
+                                        res = uploader.upload_short(v_path, title=title, description=desc, privacy_status=priv)
+                                        if matched_item:
+                                            matched_item["yt_uploaded"] = True
+                                            matched_item["yt_video_id"] = res["video_id"]
+                                            matched_item["yt_url"] = res["url"]
+                                            pm.save()
+                                        st.success(f"Uploaded! [View Short]({res['url']})")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"Upload failed: {e}")
 
 with tab_logs:
     st.subheader("Automation Activity Logs")

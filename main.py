@@ -46,6 +46,8 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of prompts to process")
     parser.add_argument("--add", type=str, help="Add a new prompt to the queue")
     parser.add_argument("--hunt", type=int, nargs="?", const=3, help="Hunt for top N viral cars and auto-queue them (default 3)")
+    parser.add_argument("--upload-yt", action="store_true", help="Upload completed un-uploaded videos to YouTube Shorts")
+    parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="YouTube upload privacy status")
     parser.add_argument("--headless", action="store_true", help="Force headless browser mode")
 
     args = parser.parse_args()
@@ -72,10 +74,23 @@ def main():
         count = pm.retry_failed()
         print(f"Reset {count} failed/processing prompts back to Pending.")
 
+    if args.upload_yt and not args.run:
+        from yt_uploader import YouTubeUploader
+        uploader = YouTubeUploader()
+        print("\nChecking for completed videos to upload to YouTube Shorts...")
+        results = uploader.auto_upload_completed_videos(privacy_status=args.privacy, pm=pm)
+        if results:
+            print(f"[SUCCESS] Uploaded {len(results)} videos to YouTube Shorts:")
+            for r in results:
+                print(f"- {r['title']} -> {r['url']}")
+        else:
+            print("No pending completed videos found for upload.")
+        return
+
     if args.status or (not args.login and not args.run):
         print_status(pm)
         if not args.login and not args.run:
-            print("Tip: Use --login to sign into Google, or --run to start generation.")
+            print("Tip: Use --login to sign into Google, --run to start generation, or --upload-yt to upload videos.")
             return
 
     bm = BrowserManager(headless=args.headless)
@@ -103,6 +118,12 @@ def main():
             summary = automation.run_queue(max_items=args.limit)
             print("\nExecution finished.")
             print_status(pm)
+            if args.upload_yt:
+                print("\nAutomatically uploading generated videos to YouTube Shorts...")
+                from yt_uploader import YouTubeUploader
+                uploader = YouTubeUploader()
+                results = uploader.auto_upload_completed_videos(privacy_status=args.privacy, pm=pm)
+                print(f"[SUCCESS] Uploaded {len(results)} videos to YouTube Shorts.")
         except KeyboardInterrupt:
             print("\nStopped by user.")
             automation.request_stop()

@@ -40,8 +40,10 @@ if not logger.handlers:
 class AutopilotRunner:
     """Orchestrates end-to-end hands-free content generation cycles."""
 
-    def __init__(self, headless: bool = False):
+    def __init__(self, headless: bool = False, auto_upload: bool = False, privacy_status: str = "public"):
         self.headless = headless
+        self.auto_upload = auto_upload
+        self.privacy_status = privacy_status
         self.stop_requested = False
         self.pm = PromptManager()
         self.th = TrendHunter()
@@ -78,6 +80,17 @@ class AutopilotRunner:
             logger.error(f"Error during automation cycle: {e}")
         finally:
             bm.close()
+
+        # 4. Auto-Upload to YouTube Shorts (if enabled)
+        if self.auto_upload:
+            logger.info("[Step 4/4] Auto-uploading completed videos to YouTube Shorts...")
+            try:
+                from yt_uploader import YouTubeUploader
+                uploader = YouTubeUploader()
+                uploaded = uploader.auto_upload_completed_videos(privacy_status=self.privacy_status, pm=self.pm)
+                logger.info(f"Uploaded {len(uploaded)} videos to YouTube Shorts.")
+            except Exception as e:
+                logger.warning(f"YouTube auto-upload notice: {e}")
 
         cycle_end = datetime.now()
         duration_min = (cycle_end - cycle_start).total_seconds() / 60
@@ -120,9 +133,11 @@ def main():
     parser.add_argument("--interval-hours", type=float, default=12.0, help="Interval between cycles in hours (default 12.0)")
     parser.add_argument("--once", action="store_true", help="Execute a single cycle immediately and exit")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode without opening GUI window")
+    parser.add_argument("--upload", action="store_true", help="Automatically upload completed videos to YouTube Shorts")
+    parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="Privacy status for YouTube uploads (default: public)")
 
     args = parser.parse_args()
-    runner = AutopilotRunner(headless=args.headless)
+    runner = AutopilotRunner(headless=args.headless, auto_upload=args.upload, privacy_status=args.privacy)
 
     # Handle Ctrl+C gracefully
     def handle_signal(sig, frame):
@@ -139,3 +154,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

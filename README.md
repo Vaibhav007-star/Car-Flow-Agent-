@@ -157,6 +157,44 @@ The system includes an automated **Trend Hunter** (`trend_hunter.py`) that detec
 - **Streamlit Tab**: Navigate to the **"🔥 Viral Trend Hunter"** tab in the dashboard to scan, preview, and queue trending cars with one click!
 - **CLI Command**: Run `python main.py --hunt [N]` to scan and queue the top `N` viral cars from terminal.
 
+---
+
+## 📺 YouTube Shorts Auto-Uploader & Autopilot
+
+Complete end-to-end hands-free automation from trend discovery to Google Flow generation to live YouTube Shorts publishing:
+
+### 1. YouTube Data API Setup (One-Time)
+1. Download OAuth 2.0 Client credentials (`client_secrets.json` Desktop app) from [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Place `client_secrets.json` in the project root directory.
+3. Run one-time authorization:
+   ```powershell
+   python yt_uploader.py --auth
+   ```
+4. Sign in and grant permission. Permanent credentials are saved to `token.json` (protected in `.gitignore`).
+
+### 2. Autopilot Mode (100% Hands-Free Autonomous Loop)
+Run the continuous background autopilot loop:
+```powershell
+python autopilot.py --interval 60 --hunt-count 3 --upload --privacy public
+```
+- Automatically hunts top viral cars every cycle.
+- Synthesizes 10-shot ASMR prompts formatted to `Car Promot.pdf`.
+- Generates videos via Google Flow.
+- Downloads and verifies completed `.mp4` videos.
+- Automatically uploads to YouTube Shorts with `#Shorts`, ASMR tags, and category Autos & Vehicles (`categoryId: 2`).
+
+### 3. Manual or Batch YouTube Uploads
+- **Upload single video**:
+  ```powershell
+  python yt_uploader.py --upload output_videos/video_001_porsche_gt3_rs.mp4 --privacy public
+  ```
+- **Upload all completed un-uploaded videos via CLI**:
+  ```powershell
+  python main.py --upload-yt --privacy public
+  ```
+- **Via Streamlit Dashboard**: Open `http://localhost:8501`, go to **"🎥 Video Gallery"**, and click **"🚀 Upload to YT"**.
+
+
 ## 📝 Prompt Management
 
 Prompts are managed with dual synchronization:
