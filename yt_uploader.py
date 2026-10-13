@@ -105,6 +105,14 @@ class YouTubeSEO:
         "Rate this Styrofoam car carving 1-10? 🔥 #Shorts",
     ]
 
+    OVERLAND_HOOKS = [
+        "Transforming a Microvan into a Rugged 4x4 Off-Roader! 🛞🔥 #Shorts",
+        "The Ultimate 4x4 Overland Microvan Build in 8s! ⚡ #Shorts",
+        "Rate this Lifted 4x4 Microvan Makeover 1-10? 🔥 #Shorts",
+        "Wait for the LED light bar reveal... 4x4 Overlander 💡 #Shorts",
+        "Building a Tiny 4x4 Off-Road Monster! 🛞🤤 #Shorts",
+    ]
+
     @classmethod
     def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
         """Extracts (car_name, niche, material) from prompt text or filename."""
@@ -129,6 +137,8 @@ class YouTubeSEO:
             hooks = cls.PEEL_HOOKS
         elif niche_lower in ("foam", "styrofoam", "craft"):
             hooks = cls.FOAM_HOOKS
+        elif niche_lower in ("overland", "overlander", "restomod", "microvan"):
+            hooks = cls.OVERLAND_HOOKS
         else:
             hooks = cls.DIECAST_HOOKS
 
@@ -175,6 +185,13 @@ class YouTubeSEO:
                 f"🎧 Wear headphones for the best binaural razor blade foam slicing, sandpaper friction, and soft brush strokes!\n\n"
                 f"💬 Which vehicle should we carve from Styrofoam next? Drop your pick in the comments below! 👇\n\n"
                 f"#Shorts #ASMR #Styrofoam #Carving #DIYCraft #CarBuild #Satisfying #Handmade #Viral #{car_tag}"
+            )
+        elif niche_lower in ("overland", "overlander", "restomod", "microvan"):
+            desc = (
+                f"Satisfying custom garage transformation of a white {car_name} into a rugged lifted 4x4 off-roader! 🛞🔥\n"
+                f"🎧 Wear headphones for the best binaural impact-driver whirrs, socket clicks, and tire thuds!\n\n"
+                f"💬 Which vehicle should we turn into a 4x4 overland monster next? Drop your pick below! 👇\n\n"
+                f"#Shorts #Overlanding #4x4 #Microvan #CustomCar #OffRoad #CarBuild #Satisfying #Viral"
             )
         else:
             desc = (
@@ -290,6 +307,31 @@ class YouTubeSEO:
                 "miniature car",
                 "sculpture",
                 car_tag,
+            ]
+        elif niche.lower() in ("overland", "overlander", "restomod", "microvan"):
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "overlanding",
+                "4x4 build",
+                "custom car",
+                "car restomod",
+                "microvan",
+                "suzuki microvan",
+                "off road",
+                "lifted 4x4",
+                "car makeover",
+                "impact driver ASMR",
+                "time lapse build",
+                clean_car,
+                f"{clean_car} 4x4",
+                f"{clean_car} build",
+                car_tag,
+                "binaural ASMR",
             ]
         else:
             candidates = [

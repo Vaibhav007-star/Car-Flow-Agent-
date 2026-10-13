@@ -120,5 +120,18 @@
     "yt_video_id": "qlFYk7Ip5KQ",
     "yt_url": "https://youtube.com/shorts/qlFYk7Ip5KQ",
     "yt_publish_at": "2026-10-16T14:30:00Z"
+  },
+  {
+    "id": "e4f8812a",
+    "prompt": "Vertical 9:16 photorealistic custom-garage makeover time-lapse, exactly 8 seconds in a bright seamless white cyclorama studio with glossy white floor and soft overhead lighting: [0.0-2.0s] low-angle shot as two mechanics' black-gloved hands use pneumatic impact drivers to bolt a rugged black steel bull-bar bumper and winch plate onto a white Suzuki Microvan; [2.0-4.0s] close-up: hands tighten a heavy-duty roof rack and curved black LED light bar with a socket wrench, slotting in round LED halo headlights; [4.0-6.0s] hands press on flared black fender arches and torque down beadlock wheels wrapped in knobby all-terrain tires, red lifted suspension coilovers visible behind; [6.0-8.0s] open door reveals white diamond-quilted leather seats and glowing digital cluster before clicking shut, pulling back into a wide cinematic tracking hero reveal of the lifted white Suzuki Microvan reflected in the glossy floor as all LED lights beam alive. Exactly four natural human hands with black mechanic gloves throughout, consistent vehicle and tools, clean commercial aesthetic, shallow depth of field, diegetic ASMR impact-driver whirrs, socket ratchet clicks, tire thuds, and LED startup chime only, no music, no voice. No faces, no visible bodies, no text, no logos, no watermark, no extra fingers, no cartoon look, no vehicle color change, no flickering.",
+    "status": "Completed",
+    "output_file": "video_007_overland_suzuki_microvan_restomod.mp4",
+    "error": null,
+    "created_at": "2026-10-13T16:50:00.000000+00:00",
+    "updated_at": "2026-10-13T16:53:00.000000+00:00",
+    "yt_uploaded": true,
+    "yt_video_id": "mUeQ1RTUUNs",
+    "yt_url": "https://youtube.com/shorts/mUeQ1RTUUNs",
+    "yt_publish_at": "2026-10-17T08:00:00Z"
   }
 ]

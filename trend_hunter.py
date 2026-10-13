@@ -159,6 +159,20 @@ def format_foam_car_prompt(car_name: str = "sedan") -> str:
     return prompt
 
 
+def format_overlander_prompt(car_name: str = "Suzuki Microvan") -> str:
+    """Formats an 8-second 4x4 overlander restomod makeover prompt according to offroad_overlander_makeover.md."""
+    clean_car = car_name.strip()
+    prompt = (
+        f"Vertical 9:16 photorealistic custom-garage makeover time-lapse, exactly 8 seconds in a bright seamless white cyclorama studio with glossy white floor and soft overhead lighting: "
+        f"[0.0-2.0s] low-angle shot as two mechanics' black-gloved hands use pneumatic impact drivers to bolt a rugged black steel bull-bar bumper and winch plate onto a white {clean_car}; "
+        f"[2.0-4.0s] close-up: hands tighten a heavy-duty roof rack and curved black LED light bar with a socket wrench, slotting in round LED halo headlights; "
+        f"[4.0-6.0s] hands press on flared black fender arches and torque down beadlock wheels wrapped in knobby all-terrain tires, red lifted suspension coilovers visible behind; "
+        f"[6.0-8.0s] open door reveals white diamond-quilted leather seats and glowing digital cluster before clicking shut, pulling back into a wide cinematic tracking hero reveal of the lifted white {clean_car} reflected in the glossy floor as all LED lights beam alive. "
+        f"Exactly four natural human hands with black mechanic gloves throughout, consistent vehicle and tools, clean commercial aesthetic, shallow depth of field, "
+        f"diegetic ASMR impact-driver whirrs, socket ratchet clicks, tire thuds, and LED startup chime only, no music, no voice. "
+        f"No faces, no visible bodies, no text, no logos, no watermark, no extra fingers, no cartoon look, no vehicle color change, no flickering."
+    )
+    return prompt
 
 
 class TrendHunter:
@@ -536,6 +550,10 @@ class TrendHunter:
                     prompt_text = format_model_kit_car_prompt(car_name, material)
                 elif niche in ("peel", "delivery", "peel_and_delivery"):
                     prompt_text = format_peel_delivery_prompt(car_name, material)
+                elif niche in ("foam", "styrofoam", "craft"):
+                    prompt_text = format_foam_car_prompt(car_name)
+                elif niche in ("overland", "overlander", "restomod", "microvan"):
+                    prompt_text = format_overlander_prompt(car_name)
                 else:
                     prompt_text = format_short_video_prompt(car_name, material)
 

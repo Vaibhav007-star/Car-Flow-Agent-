@@ -84,7 +84,11 @@ class HistoryManager:
         f_lower = (filename or "").lower()
 
         # 1. Detect Niche
-        if "peel" in p_lower or "transit film" in p_lower or "push-to-start" in p_lower or "peel" in f_lower:
+        if "overland" in p_lower or "microvan" in p_lower or "off-road" in p_lower or "overland" in f_lower or "restomod" in p_lower:
+            matched_niche = "overland"
+        elif "foam" in p_lower or "styrofoam" in p_lower or "foam" in f_lower:
+            matched_niche = "foam"
+        elif "peel" in p_lower or "transit film" in p_lower or "push-to-start" in p_lower or "peel" in f_lower:
             matched_niche = "peel"
         elif "model-kit" in p_lower or "model kit" in p_lower or "unboxing" in p_lower or "model_kit" in f_lower:
             matched_niche = "model_kit"
@@ -138,7 +142,26 @@ class HistoryManager:
                     for w in LOCKED_WOODS:
                         if candidate.lower().startswith(w.lower()):
                             candidate = candidate[len(w):].strip()
-                    car_name = candidate
+        elif matched_niche == "overland":
+            matched_material = "Rugged Off-Road"
+            if prompt_text:
+                m = re.search(r"bumper and winch plate onto a\s+(?:white\s+)?(.*?);", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"tracking hero reveal of the lifted\s+(?:white\s+)?(.*?)\s+reflected", prompt_text, re.IGNORECASE)
+                if m:
+                    car_name = m.group(1).strip()
+            if not car_name and ("microvan" in p_lower or "microvan" in f_lower):
+                car_name = "Suzuki Microvan"
+        elif matched_niche == "foam":
+            matched_material = "White Foam"
+            if prompt_text:
+                m = re.search(r"completed white Styrofoam\s+(.*?)\s+into a dramatic", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"foam block into a\s+(?:sleek\s+)?(?:sculpted\s+)?(.*?)(?:body|with)", prompt_text, re.IGNORECASE)
+                if m:
+                    car_name = m.group(1).strip()
+            if not car_name:
+                car_name = "Realistic Sedan"
         else:
             # Diecast Niche
             for c in LOCKED_COLORS:
