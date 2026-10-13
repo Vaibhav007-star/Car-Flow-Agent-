@@ -56,108 +56,134 @@ def get_next_daily_slots(count: int = 1, min_lead_minutes: int = 45) -> List[str
 
 
 class YouTubeSEO:
-    """Generates high-CTR viral titles, rich SEO descriptions, and high-ranking tags for YouTube Shorts."""
+    """Generates high-CTR viral titles, rich SEO descriptions, and high-ranking tags for YouTube Shorts across niches."""
 
-    LOCKED_COLORS = [
-        "Racing Red", "Electric Blue", "Midnight Purple", "Sunset Orange",
-        "Emerald Green", "Frozen Silver", "Solar Yellow", "Gloss White",
-        "Matte Carbon", "Candy Apple Red",
-    ]
-
-    VIRAL_HOOKS = [
+    DIECAST_HOOKS = [
         "Satisfying {car} Assembly ASMR 🎧 #Shorts",
         "Rate this {car} build 1-10? 🔥 #Shorts",
         "Wait for the exhaust sound... {car} 🔊 #Shorts",
-        "Building the Ultimate {color} {car} in 8s ⚡ #Shorts",
+        "Building the Ultimate {material} {car} in 8s ⚡ #Shorts",
         "The Most Satisfying {car} Build Ever 🤤 #Shorts",
     ]
 
+    WOODEN_HOOKS = [
+        "Handcrafting a {material} {car} ASMR 🪵🎧 #Shorts",
+        "Rate this wooden {car} carving 1-10? 🔥 #Shorts",
+        "Carving the Ultimate {car} from {material} 🪚 #Shorts",
+        "Listen to the wood carving sound... {car} 🔊 #Shorts",
+        "The Most Satisfying Wooden {car} Build 🤤 #Shorts",
+    ]
+
+    @classmethod
+    def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
+        """Extracts (car_name, niche, material) from prompt text or filename."""
+        from history_manager import HistoryManager
+        return HistoryManager.parse_car_niche_and_material(prompt, filename)
+
     @classmethod
     def extract_car_and_color(cls, prompt: str = "", filename: str = "") -> tuple[str, str]:
-        """Extracts clean car name and color from prompt text or filename."""
-        matched_color = "Custom"
-        car_name = ""
-
-        if prompt:
-            import re
-            m = re.search(r"A miniature (.*?) in a spotless", prompt, re.IGNORECASE)
-            if m:
-                target_str = m.group(1).strip()
-                for c in cls.LOCKED_COLORS:
-                    if target_str.lower().startswith(c.lower()):
-                        matched_color = c
-                        car_name = target_str[len(c):].strip()
-                        break
-                if not car_name:
-                    car_name = target_str
-
-        if not car_name and filename:
-            clean_stem = Path(filename).stem
-            parts = clean_stem.replace("video_", "").split("_")
-            car_parts = [p for p in parts if not p.isdigit()]
-            car_name = " ".join(car_parts).title()
-
-        car_name = car_name or "Supercar"
-        return car_name, matched_color
+        """Backwards-compatibility extraction returning (car_name, material)."""
+        car_name, _, material = cls.extract_metadata(prompt, filename)
+        return car_name, material
 
     @classmethod
-    def generate_title(cls, car_name: str, color: str = "", variant_idx: Optional[int] = None) -> str:
-        """Generates a viral hook title under 85 characters with #Shorts."""
+    def generate_title(cls, car_name: str, material: str = "", niche: str = "diecast", variant_idx: Optional[int] = None) -> str:
+        """Generates a viral hook title under 95 characters with #Shorts."""
+        hooks = cls.WOODEN_HOOKS if niche.lower() == "wooden" else cls.DIECAST_HOOKS
         if variant_idx is None:
-            variant_idx = abs(hash(car_name)) % len(cls.VIRAL_HOOKS)
+            variant_idx = abs(hash(car_name)) % len(hooks)
         else:
-            variant_idx = variant_idx % len(cls.VIRAL_HOOKS)
+            variant_idx = variant_idx % len(hooks)
 
-        template = cls.VIRAL_HOOKS[variant_idx]
-        title = template.format(car=car_name, color=color or "Custom")
+        template = hooks[variant_idx]
+        title = template.format(car=car_name, material=material or "Custom", color=material or "Custom")
         if "#shorts" not in title.lower():
             title = f"{title} #Shorts"
         return title[:95]
 
     @classmethod
-    def generate_description(cls, car_name: str, color: str = "", prompt: str = "") -> str:
-        """Generates high-retention SEO description with timestamps, CTA, and keyword hashtags."""
+    def generate_description(cls, car_name: str, material: str = "", prompt: str = "", niche: str = "diecast") -> str:
+        """Generates high-retention SEO description tailored to the niche."""
         car_tag = car_name.replace(" ", "").replace("-", "")
-        desc = (
-            f"Satisfying ASMR customization and assembly of the miniature {color} {car_name}.\n"
-            f"🎧 Wear headphones for the best binaural mechanical clicks, ratchet sounds, and exhaust rumble!\n\n"
-            f"💬 Which dream supercar should we customize next? Drop your pick in the comments below! 👇\n\n"
-            f"#Shorts #ASMR #CarCustomization #{car_tag} #Diecast #Satisfying #Supercars #Viral"
-        )
+        if niche.lower() == "wooden":
+            desc = (
+                f"Satisfying macro ASMR woodworking and hand carving of the miniature {material} {car_name}.\n"
+                f"🎧 Wear headphones for the best binaural wood carving scrapes, sanding friction, and tactile wooden taps!\n\n"
+                f"💬 Which dream car should we carve from wood next? Drop your pick in the comments below! 👇\n\n"
+                f"#Shorts #ASMR #Woodworking #CarCarving #Handmade #{car_tag} #WoodArt #Satisfying #Viral"
+            )
+        else:
+            desc = (
+                f"Satisfying ASMR customization and assembly of the miniature {material} {car_name}.\n"
+                f"🎧 Wear headphones for the best binaural mechanical clicks, ratchet sounds, and exhaust rumble!\n\n"
+                f"💬 Which dream supercar should we customize next? Drop your pick in the comments below! 👇\n\n"
+                f"#Shorts #ASMR #CarCustomization #{car_tag} #Diecast #Satisfying #Supercars #Viral"
+            )
         return desc
 
     @classmethod
-    def generate_tags(cls, car_name: str, color: str = "") -> List[str]:
+    def generate_tags(cls, car_name: str, material: str = "", niche: str = "diecast") -> List[str]:
         """Generates ranked tag cluster targeting high search volume and Shorts feed velocity."""
         clean_car = car_name.strip()
         brand = clean_car.split()[0] if clean_car else ""
         car_tag = clean_car.replace(" ", "")
 
-        candidates = [
-            "Shorts",
-            "YouTube Shorts",
-            "viral shorts",
-            "satisfying",
-            "oddly satisfying",
-            "ASMR",
-            "car ASMR",
-            "car customization",
-            "miniature car",
-            "miniature car assembly",
-            "diecast car",
-            "diecast restoration",
-            "diecast customization",
-            "custom car build",
-            "exhaust sound",
-            "engine startup",
-            "supercars",
-            "hypercar",
-            clean_car,
-            f"{clean_car} ASMR",
-            f"{clean_car} sound",
-            brand,
-            car_tag,
-        ]
+        if niche.lower() == "wooden":
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "woodworking",
+                "wood carving",
+                "wood carving ASMR",
+                "woodworking ASMR",
+                "car carving",
+                "wooden car",
+                "handmade wooden car",
+                "wood art",
+                "chisel ASMR",
+                "sanding ASMR",
+                "tactile ASMR",
+                clean_car,
+                f"{clean_car} build",
+                f"{clean_car} wooden",
+                f"{material} wood",
+                f"{brand} car",
+                f"#{car_tag}",
+                "binaural ASMR",
+                "relaxing woodworking",
+            ]
+        else:
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "car ASMR",
+                "car customization",
+                "miniature car",
+                "miniature car assembly",
+                "diecast car",
+                "diecast restoration",
+                "diecast customization",
+                "custom car build",
+                "exhaust sound",
+                "engine startup",
+                "supercars",
+                "hypercar",
+                clean_car,
+                f"{clean_car} ASMR",
+                f"{clean_car} sound",
+                brand,
+                f"#{car_tag}",
+                "binaural ASMR",
+            ]
+        return [t for t in candidates if t][:25]
         if color:
             candidates.append(f"{color} {clean_car}")
 
@@ -343,11 +369,11 @@ class YouTubeUploader:
                 if full_path.exists():
                     prompt_text = item.get("prompt", "")
 
-                    # Extract car and color, then generate dynamic SEO metadata
-                    car_name, color = YouTubeSEO.extract_car_and_color(prompt_text, full_path.name)
-                    title = YouTubeSEO.generate_title(car_name, color, variant_idx=unuploaded_count)
-                    desc = YouTubeSEO.generate_description(car_name, color, prompt_text)
-                    tags = YouTubeSEO.generate_tags(car_name, color)
+                    # Extract car, niche, and material, then generate dynamic SEO metadata
+                    car_name, niche, material = YouTubeSEO.extract_metadata(prompt_text, full_path.name)
+                    title = YouTubeSEO.generate_title(car_name, material=material, niche=niche, variant_idx=unuploaded_count)
+                    desc = YouTubeSEO.generate_description(car_name, material=material, prompt=prompt_text, niche=niche)
+                    tags = YouTubeSEO.generate_tags(car_name, material=material, niche=niche)
 
                     # Determine schedule target
                     sched_hours = None
@@ -407,10 +433,10 @@ def main():
 
     if args.upload:
         p = Path(args.upload)
-        car_name, color = YouTubeSEO.extract_car_and_color("", p.name)
-        title = args.title or YouTubeSEO.generate_title(car_name, color)
-        desc = YouTubeSEO.generate_description(car_name, color)
-        tags = YouTubeSEO.generate_tags(car_name, color)
+        car_name, niche, material = YouTubeSEO.extract_metadata("", p.name)
+        title = args.title or YouTubeSEO.generate_title(car_name, material=material, niche=niche)
+        desc = YouTubeSEO.generate_description(car_name, material=material, niche=niche)
+        tags = YouTubeSEO.generate_tags(car_name, material=material, niche=niche)
 
         publish_target = args.schedule_at
         if args.daily_slots:

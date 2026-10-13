@@ -41,12 +41,13 @@ if not logger.handlers:
 class AutopilotRunner:
     """Orchestrates end-to-end hands-free content generation cycles."""
 
-    def __init__(self, headless: bool = False, auto_upload: bool = False, privacy_status: str = "public", schedule_interval: Optional[float] = None, daily_slots: bool = False):
+    def __init__(self, headless: bool = False, auto_upload: bool = False, privacy_status: str = "public", schedule_interval: Optional[float] = None, daily_slots: bool = False, niche: str = "all"):
         self.headless = headless
         self.auto_upload = auto_upload
         self.privacy_status = privacy_status
         self.schedule_interval = schedule_interval
         self.daily_slots = daily_slots
+        self.niche = niche
         self.stop_requested = False
         self.pm = PromptManager()
         self.hm = HistoryManager()
@@ -67,8 +68,8 @@ class AutopilotRunner:
             logger.info(f"Anti-repetition: Purged {cleaned} duplicate prompts from generation queue.")
 
         # 1. Trend Hunting
-        logger.info(f"[Step 1/3] Hunting top {viral_count} viral cars (excluding past builds)...")
-        trends = self.th.get_trending_cars(max_results=viral_count)
+        logger.info(f"[Step 1/3] Hunting top {viral_count} viral cars (niche: {self.niche}, excluding past builds)...")
+        trends = self.th.get_trending_cars(max_results=viral_count, niche=self.niche)
         if not trends:
             logger.warning("No viral trends discovered in this cycle. Retrying on next tick.")
             return {"status": "no_trends", "downloaded": []}
@@ -148,6 +149,7 @@ class AutopilotRunner:
 def main():
     parser = argparse.ArgumentParser(description="Google Flow Autopilot Runner")
     parser.add_argument("--count", type=int, default=2, help="Number of viral cars to produce per cycle (default 2)")
+    parser.add_argument("--niche", type=str, default="all", choices=["all", "diecast", "wooden"], help="Content niche for autopilot (default: all / alternating)")
     parser.add_argument("--interval-hours", type=float, default=12.0, help="Interval between cycles in hours (default 12.0)")
     parser.add_argument("--once", action="store_true", help="Execute a single cycle immediately and exit")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode without opening GUI window")
@@ -163,6 +165,7 @@ def main():
         privacy_status=args.privacy,
         schedule_interval=args.schedule_interval,
         daily_slots=args.daily_slots,
+        niche=args.niche,
     )
 
     # Handle Ctrl+C gracefully

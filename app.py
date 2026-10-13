@@ -22,8 +22,8 @@ st.set_page_config(
 from config import FLOW_URL, OUTPUT_DIR, LOGS_DIR, USER_DATA_DIR, YOUTUBE_API_KEY
 from prompt_manager import PromptManager
 from downloader import VideoDownloader
-from trend_hunter import TrendHunter, LOCKED_COLORS, format_short_video_prompt
-from history_manager import HistoryManager
+from trend_hunter import TrendHunter, LOCKED_COLORS, LOCKED_WOODS, format_short_video_prompt, format_wooden_car_prompt
+from history_manager import HistoryManager, LOCKED_COLORS, LOCKED_WOODS
 
 # Initialize managers
 pm = PromptManager()
@@ -171,7 +171,7 @@ with tab_hunter:
     st.subheader("🔥 Viral Car Trend Hunter")
     st.caption("Discover high-velocity trending cars across YouTube Shorts, Google Trends, and automotive communities, then automatically generate ready-to-run 10-shot video prompts.")
 
-    col_h1, col_h2, col_h3 = st.columns([2, 1, 1])
+    col_h1, col_h2, col_h3, col_h4 = st.columns([2, 2, 1, 1])
     with col_h1:
         yt_api_input = st.text_input(
             "YouTube Data API Key (Optional)",
@@ -180,8 +180,25 @@ with tab_hunter:
             help="Enables real-time queries for top-viewed YouTube Shorts. If left blank, Google Trends and the viral database are used automatically."
         )
     with col_h2:
-        num_cars = st.slider("Number of cars to hunt", min_value=1, max_value=8, value=4)
+        niche_selection = st.selectbox(
+            "🎨 Content Niche",
+            options=[
+                "Artisan Wooden Car Carving (New 🪵)",
+                "Diecast Miniature Assembly (Original 🏎️)",
+                "Mixed / Alternating (Both 🔀)"
+            ],
+            index=0,
+            help="Choose between handcrafted wooden car carving ASMR or spotless studio diecast assembly."
+        )
+        niche_key_map = {
+            "Artisan Wooden Car Carving (New 🪵)": "wooden",
+            "Diecast Miniature Assembly (Original 🏎️)": "diecast",
+            "Mixed / Alternating (Both 🔀)": "all",
+        }
+        chosen_niche = niche_key_map[niche_selection]
     with col_h3:
+        num_cars = st.slider("Number of cars", min_value=1, max_value=8, value=4)
+    with col_h4:
         st.write("")
         st.write("")
         scan_btn = st.button("🔍 Scan Trends Now", type="primary", use_container_width=True)
@@ -192,13 +209,13 @@ with tab_hunter:
     if scan_btn:
         hunter = TrendHunter(youtube_api_key=yt_api_input.strip() or None)
         with st.spinner("Scanning YouTube Shorts, Google Trends, and viral automotive niches..."):
-            st.session_state.discovered_trends = hunter.get_trending_cars(max_results=num_cars)
-        st.success(f"Discovered {len(st.session_state.discovered_trends)} viral car trends!")
+            st.session_state.discovered_trends = hunter.get_trending_cars(max_results=num_cars, niche=chosen_niche)
+        st.success(f"Discovered {len(st.session_state.discovered_trends)} viral car trends ({niche_selection})!")
 
     if st.session_state.discovered_trends:
         col_act1, col_act2 = st.columns([3, 1])
         with col_act1:
-            st.info("Review discovered trends below. You can change their color or add them directly to your generation queue.")
+            st.info("Review discovered trends below. You can change their wood/color or add them directly to your generation queue.")
         with col_act2:
             if st.button("➕ Queue All Discovered Cars", use_container_width=True):
                 hunter = TrendHunter()
@@ -207,26 +224,36 @@ with tab_hunter:
                 st.rerun()
 
         for idx, t in enumerate(st.session_state.discovered_trends):
+            cand_niche = t.get("niche", "diecast")
+            is_wooden = cand_niche == "wooden"
+            niche_label = "🪵 Wooden Carving" if is_wooden else "🏎️ Diecast Assembly"
+            palette = LOCKED_WOODS if is_wooden else LOCKED_COLORS
+            palette_label = "Carved Wood" if is_wooden else "Chosen Color"
+
             with st.container(border=True):
                 col_c1, col_c2, col_c3, col_c4 = st.columns([3, 2, 2, 1])
                 with col_c1:
-                    st.markdown(f"### {t['car']}")
+                    st.markdown(f"### {t['car']} <span style='font-size:0.85rem; background:#2e2417; color:#f0ad4e; padding:3px 8px; border-radius:4px;'>{niche_label}</span>", unsafe_allow_html=True)
                     st.caption(f"Source: **{t['source']}** · Virality Score: **{t['score']}/100**")
-                    used_colors = hm.get_used_colors(t["car"])
-                    if used_colors:
-                        st.caption(f"🛡️ Already built in: *{', '.join(used_colors)}*")
+                    used_mats = hm.get_used_materials(t["car"], niche=cand_niche)
+                    if used_mats:
+                        st.caption(f"🛡️ Already created in: *{', '.join(used_mats)}*")
                     st.write(t.get("details", ""))
                 with col_c2:
-                    current_color = t.get("color", LOCKED_COLORS[0])
-                    col_idx = LOCKED_COLORS.index(current_color) if current_color in LOCKED_COLORS else 0
-                    selected_color = st.selectbox(
-                        "Chosen Color",
-                        options=LOCKED_COLORS,
+                    current_mat = t.get("material") or t.get("color", palette[0])
+                    col_idx = palette.index(current_mat) if current_mat in palette else 0
+                    selected_mat = st.selectbox(
+                        palette_label,
+                        options=palette,
                         index=col_idx,
-                        key=f"color_select_{idx}"
+                        key=f"mat_select_{idx}"
                     )
-                    t["color"] = selected_color
-                    t["prompt"] = format_short_video_prompt(t["car"], selected_color)
+                    t["material"] = selected_mat
+                    t["color"] = selected_mat
+                    if is_wooden:
+                        t["prompt"] = format_wooden_car_prompt(t["car"], selected_mat)
+                    else:
+                        t["prompt"] = format_short_video_prompt(t["car"], selected_mat)
                 with col_c3:
                     with st.expander("👁️ View Generated Prompt"):
                         st.caption(t["prompt"])
@@ -294,11 +321,14 @@ with tab_history:
     else:
         st.markdown("### 🏎️ Completed Vehicles in History")
         for idx, entry in enumerate(hm.entries):
+            e_niche = entry.get("niche", "diecast").lower()
+            n_label = "🪵 Wooden" if e_niche == "wooden" else "🏎️ Diecast"
+            mat = entry.get("material") or entry.get("color")
             with st.container(border=True):
                 c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
                 with c1:
-                    st.markdown(f"**#{idx+1} {entry['car']}**")
-                    st.caption(f"Color: **{entry['color']}**")
+                    st.markdown(f"**#{idx+1} {entry['car']}** · `{n_label}`")
+                    st.caption(f"Finish: **{mat}**")
                 with c2:
                     st.code(entry.get("output_file", "N/A"))
                 with c3:
@@ -311,17 +341,27 @@ with tab_history:
                     st.caption(f"Recorded: {recorded_time}")
 
         st.divider()
-        st.markdown("### 🎨 Color Palette Utilization")
+        st.markdown("### 🎨 Diecast Paint Palette (10 Colors)")
         color_counts = {c: 0 for c in LOCKED_COLORS}
         for entry in hm.entries:
-            col_name = entry.get("color")
-            if col_name in color_counts:
-                color_counts[col_name] += 1
-
-        palette_cols = st.columns(5)
+            if entry.get("niche", "diecast") == "diecast":
+                c_name = entry.get("material") or entry.get("color")
+                if c_name in color_counts:
+                    color_counts[c_name] += 1
+        c_cols = st.columns(5)
         for i, (col_name, cnt) in enumerate(color_counts.items()):
-            col_idx = i % 5
-            palette_cols[col_idx].metric(col_name, f"{cnt} built")
+            c_cols[i % 5].metric(col_name, f"{cnt} built")
+
+        st.markdown("### 🪵 Handcrafted Wood Palette (10 Woods)")
+        wood_counts = {w: 0 for w in LOCKED_WOODS}
+        for entry in hm.entries:
+            if entry.get("niche") == "wooden":
+                w_name = entry.get("material") or entry.get("color")
+                if w_name in wood_counts:
+                    wood_counts[w_name] += 1
+        w_cols = st.columns(5)
+        for i, (w_name, cnt) in enumerate(wood_counts.items()):
+            w_cols[i % 5].metric(w_name, f"{cnt} carved")
 
 with tab_gallery:
     st.subheader("Downloaded Videos (output_videos/)")
@@ -383,10 +423,10 @@ with tab_gallery:
                                 uploader = YouTubeUploader()
                                 with st.spinner("Optimizing SEO & Uploading to YouTube Shorts..."):
                                     prompt_str = matched_item.get("prompt", "") if matched_item else ""
-                                    car_name, color = YouTubeSEO.extract_car_and_color(prompt_str, v_path.name)
-                                    title = YouTubeSEO.generate_title(car_name, color)
-                                    desc = YouTubeSEO.generate_description(car_name, color, prompt_str)
-                                    tags = YouTubeSEO.generate_tags(car_name, color)
+                                    car_name, niche, material = YouTubeSEO.extract_metadata(prompt_str, v_path.name)
+                                    title = YouTubeSEO.generate_title(car_name, material=material, niche=niche)
+                                    desc = YouTubeSEO.generate_description(car_name, material=material, prompt=prompt_str, niche=niche)
+                                    tags = YouTubeSEO.generate_tags(car_name, material=material, niche=niche)
 
                                     privacy_map = {
                                         "Public (Instant)": "public",

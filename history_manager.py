@@ -1,6 +1,6 @@
 """Generation History and Anti-Repetition Intelligence Module.
-Tracks all created videos and (Car, Color) combinations to prevent duplicate generation,
-save Google Flow computing limits, conserve YouTube API quota, and ensure content variety.
+Tracks all created videos, niches, and (Car, Material/Color) combinations to prevent duplicate generation,
+save Google Flow computing limits, conserve YouTube API quota, and ensure content variety across niches.
 """
 
 import json
@@ -18,6 +18,7 @@ logger.setLevel(logging.INFO)
 
 HISTORY_FILE = BASE_DIR / "generation_history.json"
 
+# The 10 locked colors defined in Car Promot.pdf (Diecast Niche)
 LOCKED_COLORS = [
     "Pearl White",
     "Jet Black",
@@ -29,6 +30,20 @@ LOCKED_COLORS = [
     "Sunset Orange",
     "Titanium Gold",
     "Midnight Purple",
+]
+
+# The 10 locked woods defined in wooden_car_carving.md (Wooden Carving Niche)
+LOCKED_WOODS = [
+    "Light Maple",
+    "Pale Birch",
+    "Natural Oak",
+    "Honey Ash",
+    "Raw Pine",
+    "Blonde Bamboo",
+    "Warm Cherry",
+    "Rich Walnut",
+    "Golden Teak",
+    "Dark Ebony",
 ]
 
 
@@ -59,82 +74,157 @@ class HistoryManager:
             json.dump(self.entries, f, indent=2, ensure_ascii=False)
 
     @classmethod
-    def parse_car_and_color(cls, prompt_text: str = "", filename: str = "") -> Tuple[str, str]:
-        """Parses canonical Car Model and Color from a prompt string or video filename."""
-        matched_color = "Custom"
+    def parse_car_niche_and_material(cls, prompt_text: str = "", filename: str = "") -> Tuple[str, str, str]:
+        """Parses canonical Car Model, Niche ('diecast' | 'wooden'), and Material/Color."""
+        matched_material = "Custom"
+        matched_niche = "diecast"
         car_name = ""
 
-        if prompt_text:
-            m = re.search(r"A miniature (.*?) in a spotless", prompt_text, re.IGNORECASE)
-            if m:
-                target_str = m.group(1).strip()
-                for c in LOCKED_COLORS:
-                    if target_str.lower().startswith(c.lower()):
-                        matched_color = c
-                        car_name = target_str[len(c):].strip()
-                        break
-                if not car_name:
-                    car_name = target_str
+        p_lower = (prompt_text or "").lower()
+        f_lower = (filename or "").lower()
 
+        # 1. Detect Niche
+        if "wood" in p_lower or "carv" in p_lower or "workshop" in p_lower or "workbench" in p_lower or "wooden" in f_lower:
+            matched_niche = "wooden"
+        else:
+            matched_niche = "diecast"
+
+        # 2. Extract Material based on Niche
+        if matched_niche == "wooden":
+            for w in LOCKED_WOODS:
+                if w.lower() in p_lower:
+                    matched_material = w
+                    break
+            # Extract car name from wooden prompt patterns
+            if prompt_text:
+                if matched_material != "Custom":
+                    m = re.search(rf"miniature\s+{re.escape(matched_material)}\s+(.*?)\s+closed-roof coupe", prompt_text, re.IGNORECASE)
+                    if not m:
+                        m = re.search(rf"finished\s+{re.escape(matched_material)}\s+(.*?)\s+on the workbench", prompt_text, re.IGNORECASE)
+                else:
+                    m = None
+
+                if not m:
+                    m = re.search(r"miniature\s+(.*?)\s+closed-roof coupe", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"A miniature (.*?) handcrafted", prompt_text, re.IGNORECASE)
+
+                if m:
+                    candidate = m.group(1).strip()
+                    for w in LOCKED_WOODS:
+                        if candidate.lower().startswith(w.lower()):
+                            candidate = candidate[len(w):].strip()
+                    car_name = candidate
+        else:
+            # Diecast Niche
+            for c in LOCKED_COLORS:
+                if c.lower() in p_lower:
+                    matched_material = c
+                    break
+            if prompt_text:
+                m = re.search(r"A miniature (.*?) in a spotless", prompt_text, re.IGNORECASE)
+                if m:
+                    candidate = m.group(1).strip()
+                    for c in LOCKED_COLORS:
+                        if candidate.lower().startswith(c.lower()):
+                            candidate = candidate[len(c):].strip()
+                            break
+                    car_name = candidate
+
+        # 3. Fallback extraction from filename
         if not car_name and filename:
             clean_stem = Path(filename).stem
-            parts = clean_stem.replace("video_", "").split("_")
+            parts = clean_stem.replace("video_", "").replace("wooden_", "").split("_")
             car_parts = [p for p in parts if not p.isdigit()]
             car_name = " ".join(car_parts).title()
 
         car_name = car_name.strip() or "Supercar"
-        return car_name, matched_color
+        return car_name, matched_niche, matched_material
 
-    def has_generated(self, car_name: str, color: str) -> bool:
-        """Checks if this specific Car + Color combination has already been created."""
+    @classmethod
+    def parse_car_and_color(cls, prompt_text: str = "", filename: str = "") -> Tuple[str, str]:
+        """Backwards compatibility wrapper returning (car_name, material)."""
+        car_name, _, material = cls.parse_car_niche_and_material(prompt_text, filename)
+        return car_name, material
+
+    def has_generated(self, car_name: str, material: str, niche: Optional[str] = None) -> bool:
+        """Checks if this specific Car + Material (in the given niche) has already been created."""
         target_car = car_name.strip().lower()
-        target_color = color.strip().lower()
+        target_mat = material.strip().lower()
+        target_niche = (niche or "").strip().lower()
 
         for e in self.entries:
             e_car = e.get("car", "").strip().lower()
-            e_color = e.get("color", "").strip().lower()
-            if (e_car == target_car or target_car in e_car or e_car in target_car) and e_color == target_color:
+            e_mat = (e.get("material") or e.get("color") or "").strip().lower()
+            e_niche = e.get("niche", "diecast").strip().lower()
+
+            car_matches = (e_car == target_car or target_car in e_car or e_car in target_car)
+            mat_matches = (e_mat == target_mat)
+            niche_matches = (not target_niche or e_niche == target_niche)
+
+            if car_matches and mat_matches and niche_matches:
                 return True
         return False
 
-    def get_used_colors(self, car_name: str) -> List[str]:
-        """Returns the list of colors already used for this car model."""
+    def get_palette_for_niche(self, niche: str = "diecast") -> List[str]:
+        """Returns the locked materials palette for the chosen niche."""
+        if niche.lower() == "wooden":
+            return LOCKED_WOODS
+        return LOCKED_COLORS
+
+    def get_used_materials(self, car_name: str, niche: str = "diecast") -> List[str]:
+        """Returns the list of materials/colors already used for this car model in the given niche."""
         target_car = car_name.strip().lower()
+        target_niche = niche.strip().lower()
         used = []
+
         for e in self.entries:
             e_car = e.get("car", "").strip().lower()
-            if e_car == target_car or target_car in e_car or e_car in target_car:
-                color = e.get("color")
-                if color and color not in used:
-                    used.append(color)
+            e_niche = e.get("niche", "diecast").strip().lower()
+            if (e_car == target_car or target_car in e_car or e_car in target_car) and e_niche == target_niche:
+                mat = e.get("material") or e.get("color")
+                if mat and mat not in used:
+                    used.append(mat)
         return used
 
-    def get_available_colors(self, car_name: str) -> List[str]:
-        """Returns locked colors that have NOT yet been used for this car."""
-        used = set(c.lower() for c in self.get_used_colors(car_name))
-        return [c for c in LOCKED_COLORS if c.lower() not in used]
+    def get_available_materials(self, car_name: str, niche: str = "diecast") -> List[str]:
+        """Returns locked materials that have NOT yet been used for this car in the given niche."""
+        used = set(m.lower() for m in self.get_used_materials(car_name, niche=niche))
+        palette = self.get_palette_for_niche(niche)
+        return [m for m in palette if m.lower() not in used]
 
-    def get_smart_fresh_color(self, car_name: str, preferred_color: Optional[str] = None) -> Optional[str]:
-        """Returns a non-duplicate color for this car.
+    def get_smart_fresh_material(self, car_name: str, niche: str = "diecast", preferred_material: Optional[str] = None) -> Optional[str]:
+        """Returns a non-duplicate material/color for this car.
         
-        If preferred_color is available, returns it.
-        Otherwise picks the first unused color from LOCKED_COLORS.
-        Returns None if all 10 locked colors have already been made for this car.
+        If preferred_material is available, returns it.
+        Otherwise picks the first unused material from the locked palette.
+        Returns None if all 10 locked options have already been made for this car in this niche.
         """
-        available = self.get_available_colors(car_name)
+        available = self.get_available_materials(car_name, niche=niche)
         if not available:
             return None
 
-        if preferred_color and preferred_color in available:
-            return preferred_color
+        if preferred_material and preferred_material in available:
+            return preferred_material
 
         return available[0]
+
+    # Legacy Aliases
+    def get_used_colors(self, car_name: str) -> List[str]:
+        return self.get_used_materials(car_name, niche="diecast")
+
+    def get_available_colors(self, car_name: str) -> List[str]:
+        return self.get_available_materials(car_name, niche="diecast")
+
+    def get_smart_fresh_color(self, car_name: str, preferred_color: Optional[str] = None) -> Optional[str]:
+        return self.get_smart_fresh_material(car_name, niche="diecast", preferred_material=preferred_color)
 
     def record_success(
         self,
         car_name: str,
-        color: str,
+        material: str,
         output_file: str,
+        niche: str = "diecast",
         yt_uploaded: bool = False,
         yt_url: Optional[str] = None,
     ) -> Dict[str, Any]:
@@ -150,7 +240,9 @@ class HistoryManager:
 
         entry = {
             "car": car_name.strip(),
-            "color": color.strip(),
+            "niche": niche.strip().lower(),
+            "material": material.strip(),
+            "color": material.strip(),  # kept for backwards compatibility
             "output_file": output_file,
             "yt_uploaded": yt_uploaded,
             "yt_url": yt_url,
@@ -158,7 +250,7 @@ class HistoryManager:
         }
         self.entries.append(entry)
         self.save()
-        logger.info(f"Recorded in history ledger: {color} {car_name} -> {output_file}")
+        logger.info(f"Recorded in history ledger: [{niche}] {material} {car_name} -> {output_file}")
         return entry
 
     def sync_from_prompts_state(self, pm: Optional[PromptManager] = None) -> int:
@@ -168,7 +260,7 @@ class HistoryManager:
 
         for item in manager.items:
             if item.get("status") == "Completed" and item.get("output_file"):
-                car_name, color = self.parse_car_and_color(item.get("prompt", ""), item.get("output_file", ""))
+                car_name, niche, material = self.parse_car_niche_and_material(item.get("prompt", ""), item.get("output_file", ""))
                 out_file = item["output_file"]
                 yt_up = item.get("yt_uploaded", False)
                 yt_u = item.get("yt_url")
@@ -176,12 +268,16 @@ class HistoryManager:
                 # Check if already present
                 already_in_ledger = any(e.get("output_file") == out_file for e in self.entries)
                 if not already_in_ledger:
-                    self.record_success(car_name, color, out_file, yt_uploaded=yt_up, yt_url=yt_u)
+                    self.record_success(car_name, material, out_file, niche=niche, yt_uploaded=yt_up, yt_url=yt_u)
                     added_count += 1
                 else:
                     # Update upload status if changed
                     for e in self.entries:
                         if e.get("output_file") == out_file:
+                            if "niche" not in e:
+                                e["niche"] = niche
+                            if "material" not in e:
+                                e["material"] = material
                             if yt_up and not e.get("yt_uploaded"):
                                 e["yt_uploaded"] = True
                                 e["yt_url"] = yt_u
@@ -190,13 +286,16 @@ class HistoryManager:
         return added_count
 
     def clean_queue_duplicates(self, pm: Optional[PromptManager] = None) -> int:
-        """Removes any pending prompts from the queue that duplicate an already completed car/color or another pending prompt."""
+        """Removes pending prompts from the queue that duplicate an already completed car/material/niche or earlier pending prompt."""
         manager = pm or PromptManager()
-        seen_pairs: Set[Tuple[str, str]] = set()
+        seen_triplets: Set[Tuple[str, str, str]] = set()
 
         # Seed with already completed entries from history
         for e in self.entries:
-            seen_pairs.add((e["car"].lower(), e["color"].lower()))
+            e_niche = e.get("niche", "diecast").lower()
+            e_car = e.get("car", "").lower()
+            e_mat = (e.get("material") or e.get("color") or "").lower()
+            seen_triplets.add((e_niche, e_car, e_mat))
 
         filtered_items = []
         removed_count = 0
@@ -206,14 +305,14 @@ class HistoryManager:
                 filtered_items.append(item)
                 continue
 
-            car, color = self.parse_car_and_color(item.get("prompt", ""))
-            pair = (car.lower(), color.lower())
+            car, niche, material = self.parse_car_niche_and_material(item.get("prompt", ""))
+            triplet = (niche.lower(), car.lower(), material.lower())
 
-            if pair in seen_pairs:
-                logger.info(f"Removing duplicate pending prompt [{item['id']}]: {color} {car}")
+            if triplet in seen_triplets:
+                logger.info(f"Removing duplicate pending prompt [{item['id']}]: [{niche}] {material} {car}")
                 removed_count += 1
             else:
-                seen_pairs.add(pair)
+                seen_triplets.add(triplet)
                 filtered_items.append(item)
 
         if removed_count > 0:

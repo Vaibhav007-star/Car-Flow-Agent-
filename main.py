@@ -46,6 +46,7 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of prompts to process")
     parser.add_argument("--add", type=str, help="Add a new prompt to the queue")
     parser.add_argument("--hunt", type=int, nargs="?", const=3, help="Hunt for top N viral cars and auto-queue them (default 3)")
+    parser.add_argument("--niche", type=str, default="all", choices=["all", "diecast", "wooden"], help="Target content niche for hunting (diecast, wooden, or all)")
     parser.add_argument("--upload-yt", action="store_true", help="Upload completed un-uploaded videos to YouTube Shorts")
     parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="YouTube upload privacy status")
     parser.add_argument("--daily-slots", action="store_true", help="Automatically schedule uploads to the 2 daily peak slots (1:30 PM & 8:00 PM IST)")
@@ -60,12 +61,14 @@ def main():
     if args.hunt:
         from trend_hunter import TrendHunter
         th = TrendHunter()
-        print(f"\nScanning viral automotive trends (top {args.hunt})...")
-        trends = th.get_trending_cars(max_results=args.hunt)
+        print(f"\nScanning viral automotive trends (top {args.hunt}, niche: {args.niche})...")
+        trends = th.get_trending_cars(max_results=args.hunt, niche=args.niche)
         added = th.queue_trending_cars(trends, pm)
         print(f"Successfully queued {added} new viral car prompts:")
         for t in trends:
-            print(f"- {t['car']} ({t['color']}) [Score: {t['score']}] Source: {t['source']}")
+            niche_tag = f"[{t.get('niche', 'diecast').upper()}]"
+            mat = t.get("material") or t.get("color")
+            print(f"- {niche_tag} {t['car']} ({mat}) [Score: {t['score']}] Source: {t['source']}")
         print_status(pm)
         return
 
@@ -85,8 +88,10 @@ def main():
             print("No completed builds recorded yet.")
         else:
             for i, e in enumerate(hm.entries, 1):
+                n_tag = f"[{e.get('niche', 'diecast').upper()}]"
+                mat = e.get("material") or e.get("color")
                 yt_status = f" -> YT: {e['yt_url']}" if e.get("yt_url") else ""
-                print(f"{i:2d}. {e['color']} {e['car']} ({e['output_file']}){yt_status}")
+                print(f"{i:2d}. {n_tag} {mat} {e['car']} ({e['output_file']}){yt_status}")
         print("=" * 50 + "\n")
         return
 
