@@ -133,5 +133,18 @@
     "yt_video_id": "mUeQ1RTUUNs",
     "yt_url": "https://youtube.com/shorts/mUeQ1RTUUNs",
     "yt_publish_at": "2026-10-17T08:00:00Z"
+  },
+  {
+    "id": "a9c72e18",
+    "prompt": "Vertical 9:16 photorealistic ASMR miniature unboxing, exactly 8 seconds in extreme macro on a dark walnut workbench with softly blurred tool pegboard: [0.0-2.0s] extreme macro as tiny bolt cutters snip a yellow security seal on a miniature black shipping container, doors swinging open as fine tweezers slide out a black tray holding a 1:18 scale mirror-black Mercedes-AMG G63; [2.0-4.0s] tweezers smoothly peel clear protective transit film off the pristine mirror-black hood and roof, a soft foam swab wiping across the high-gloss mirror finish; [4.0-6.0s] driver door clicks open, tweezers peeling protective clear film off the steering wheel and digital gauge cluster before a tiny key turns the ignition switch; [6.0-8.0s] twin round LED halo headlights flare bright, blue-orange flame pops from chrome exhaust tips, pulling into a dramatic three-quarter hero shot of the completed mirror-black Mercedes-AMG G63 resting in front of the open shipping container. Exactly two natural human hands with fine tweezers and tools throughout, consistent vehicle and container model, extreme macro depth of field, warm top-left workshop lighting, diegetic ASMR bolt cutter snip, vinyl peel hiss, door click, key turn, and exhaust pop only, no music, no voice. No face, no visible person, no text, no logos, no watermark, no extra fingers, no deformed hands, no cartoon style, no car color or shape changing, no flicker.",
+    "status": "Completed",
+    "output_file": "video_008_container_unboxing_mirror_black_mercedes_amg_g63.mp4",
+    "error": null,
+    "created_at": "2026-10-13T17:25:00.000000+00:00",
+    "updated_at": "2026-10-13T17:30:15.000000+00:00",
+    "yt_uploaded": true,
+    "yt_video_id": "yMV5qpajxIs",
+    "yt_url": "https://youtube.com/shorts/yMV5qpajxIs",
+    "yt_publish_at": "2026-10-17T14:30:00Z"
   }
 ]
