@@ -89,6 +89,14 @@ class YouTubeSEO:
         "Rate this miniature {car} build 1-10? 🔥 #Shorts",
     ]
 
+    PEEL_HOOKS = [
+        "{car}: Satisfying ASMR Factory Film Peel & Startup! 🎧🔥 #Shorts",
+        "{car}: Unpeeling the {material} Monster in 8s ⚡ #Shorts",
+        "{car}: Most Satisfying Protective Peel & Push-to-Start 🤤 #Shorts",
+        "Wait for the angel-eyes to light up... {car} 💡 #Shorts",
+        "Rate this {car} ASMR factory delivery peel 1-10? 🔥 #Shorts",
+    ]
+
     @classmethod
     def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
         """Extracts (car_name, niche, material) from prompt text or filename."""
@@ -109,6 +117,8 @@ class YouTubeSEO:
             hooks = cls.WOODEN_HOOKS
         elif niche_lower in ("model_kit", "modelkit", "unboxing"):
             hooks = cls.MODEL_KIT_HOOKS
+        elif niche_lower in ("peel", "delivery", "peel_and_delivery"):
+            hooks = cls.PEEL_HOOKS
         else:
             hooks = cls.DIECAST_HOOKS
 
@@ -141,6 +151,13 @@ class YouTubeSEO:
                 f"🎧 Wear headphones for the best binaural cardboard unboxing, micro-ratchet bolt clicks, and engine startup hum!\n\n"
                 f"💬 Which iconic supercar model kit should we build next? Drop your pick in the comments below! 👇\n\n"
                 f"#Shorts #ASMR #ModelKit #Unboxing #CarBuild #{car_tag} #MiniatureCar #Satisfying #Supercars #Viral"
+            )
+        elif niche_lower in ("peel", "delivery", "peel_and_delivery"):
+            desc = (
+                f"Satisfying ASMR protective transit film peel, precision detail, and push-to-start ignition of the miniature {material} {car_name}. 🏎️✨\n"
+                f"🎧 Wear headphones for the best binaural vinyl peel hiss, door latch click, and quad angel-eye LED headlight startup hum!\n\n"
+                f"💬 Which dream supercar should we unpeel and deliver next? Drop your pick in the comments below! 👇\n\n"
+                f"#Shorts #ASMR #CarUnboxing #BMW #M4Competition #{car_tag} #Satisfying #Supercars #Viral"
             )
         else:
             desc = (
@@ -182,7 +199,7 @@ class YouTubeSEO:
                 f"{clean_car} wooden",
                 f"{material} wood",
                 f"{brand} car",
-                f"#{car_tag}",
+                car_tag,
                 "binaural ASMR",
                 "relaxing woodworking",
             ]
@@ -206,9 +223,33 @@ class YouTubeSEO:
                 f"{clean_car} model",
                 f"{clean_car} build",
                 f"{brand} model kit",
-                f"#{car_tag}",
+                car_tag,
                 "diegetic ASMR",
                 "binaural sound",
+            ]
+        elif niche.lower() in ("peel", "delivery", "peel_and_delivery"):
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "peel ASMR",
+                "unboxing",
+                "car unboxing",
+                "delivery peel",
+                "miniature car",
+                "scale model",
+                "push to start",
+                "startup sound",
+                clean_car,
+                f"{clean_car} build",
+                f"{clean_car} ASMR",
+                f"{brand} M4",
+                car_tag,
+                "binaural ASMR",
+                "satisfying video",
             ]
         else:
             candidates = [
@@ -234,10 +275,16 @@ class YouTubeSEO:
                 f"{clean_car} ASMR",
                 f"{clean_car} sound",
                 brand,
-                f"#{car_tag}",
+                car_tag,
                 "binaural ASMR",
             ]
-        return [t for t in candidates if t][:25]
+        # Clean tags: strip any hash symbols or special characters
+        sanitized = []
+        for t in candidates:
+            cleaned = t.replace("#", "").strip()
+            if cleaned and cleaned not in sanitized:
+                sanitized.append(cleaned)
+        return sanitized[:25]
         if color:
             candidates.append(f"{color} {clean_car}")
 
@@ -347,7 +394,13 @@ class YouTubeUploader:
         clean_title = clean_title[:100]
 
         default_tags = ["Shorts", "car customization", "ASMR car", "miniature car", "supercars", "diegetic ASMR"]
-        all_tags = list(set((tags or []) + default_tags))
+        raw_tags = (tags or []) + default_tags
+        clean_tags = []
+        for t in raw_tags:
+            c = str(t).replace("#", "").strip()
+            if c and c not in clean_tags and len(c) < 100:
+                clean_tags.append(c)
+        all_tags = clean_tags[:25]
 
         status_body: Dict[str, Any] = {
             "selfDeclaredMadeForKids": False,

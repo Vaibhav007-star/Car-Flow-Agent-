@@ -84,7 +84,9 @@ class HistoryManager:
         f_lower = (filename or "").lower()
 
         # 1. Detect Niche
-        if "model-kit" in p_lower or "model kit" in p_lower or "unboxing" in p_lower or "model_kit" in f_lower:
+        if "peel" in p_lower or "transit film" in p_lower or "push-to-start" in p_lower or "peel" in f_lower:
+            matched_niche = "peel"
+        elif "model-kit" in p_lower or "model kit" in p_lower or "unboxing" in p_lower or "model_kit" in f_lower:
             matched_niche = "model_kit"
         elif "wood" in p_lower or "carv" in p_lower or "workshop" in p_lower or "workbench" in p_lower or "wooden" in f_lower:
             matched_niche = "wooden"
@@ -92,13 +94,17 @@ class HistoryManager:
             matched_niche = "diecast"
 
         # 2. Extract Material based on Niche
-        if matched_niche == "model_kit":
+        if matched_niche in ("model_kit", "peel"):
             for c in LOCKED_COLORS + ["Rosso Corsa Red", "Solarbeam Yellow", "Kemora Gray", "Liquid Blue", "British Racing Green", "Papaya Orange", "Nardo Gray"]:
                 if c.lower() in p_lower:
                     matched_material = c
                     break
             if prompt_text:
-                m = re.search(r"completed miniature\s+(.*?)\s+on a rotating", prompt_text, re.IGNORECASE)
+                m = re.search(r"completed\s+(?:.*?)\s+(.*?)\s+orbits smoothly on an illuminated dark turntable", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"miniature\s+(.*?)\s+hood and carbon roof", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"completed miniature\s+(.*?)\s+on a rotating", prompt_text, re.IGNORECASE)
                 if not m:
                     m = re.search(r"miniature\s+(.*?)\s+(?:aluminum frame|chassis|carbon monocoque|carbon tub)", prompt_text, re.IGNORECASE)
                 if m:
