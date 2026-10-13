@@ -175,6 +175,23 @@ def format_overlander_prompt(car_name: str = "Suzuki Microvan") -> str:
     return prompt
 
 
+def format_kinetic_gadget_prompt(car_name: str = "boxy 4x4 SUV", color: str = "Crimson Red") -> str:
+    """Formats an 8-second kinetic gadget car transformation prompt according to kinetic_gadget_transformation.md."""
+    clean_car = car_name.strip() or "boxy 4x4 SUV"
+    clean_color = color.strip() or "Crimson Red"
+    prompt = (
+        f"Vertical 9:16 photorealistic kinetic gadget transformation, exactly 8 seconds on a polished grey-white granite table in an Indian living room with soft window lighting: "
+        f"[0.0-2.0s] low-angle shot as a man's hand presses the steel top button on a compact dark-grey octagonal gadget, triggering an instant spring-loaded burst of {clean_color.lower()} mechanical arms and chrome pistons; "
+        f"[2.0-4.0s] scissor-links push up a silver ladder chassis, locking gold coilover shock springs and knobby all-terrain tires onto axles with sharp mechanical clicks; "
+        f"[4.0-6.0s] glossy {clean_color.lower()} body panels, black roof, and front grille of the miniature {clean_car} snap flush into place with magnetic clicks, driver door swinging open and snapping shut; "
+        f"[6.0-8.0s] the completed 1:18 scale {clean_color.lower()} {clean_car} rests solid on the granite table as dual round LED headlights and amber fog lamps switch on with crisp reflections, holding final hero shot. "
+        f"Exactly one natural human hand visible in initial beat, consistent vehicle model and granite surface throughout, shallow depth of field, rapid satisfying mechanical pacing, "
+        f"diegetic ASMR button click, spring snaps, servo whirrs, and LED chime only, no music, no voice. "
+        f"No face, no text, no captions, no logos, no watermark, no extra fingers, no cartoon look, no morphing parts, no camera shake."
+    )
+    return prompt
+
+
 class TrendHunter:
     """Discovers viral automotive trends and converts them into multi-niche production prompts."""
 
@@ -554,6 +571,8 @@ class TrendHunter:
                     prompt_text = format_foam_car_prompt(car_name)
                 elif niche in ("overland", "overlander", "restomod", "microvan"):
                     prompt_text = format_overlander_prompt(car_name)
+                elif niche in ("kinetic", "gadget", "transformation"):
+                    prompt_text = format_kinetic_gadget_prompt(car_name, material)
                 else:
                     prompt_text = format_short_video_prompt(car_name, material)
 

@@ -113,6 +113,14 @@ class YouTubeSEO:
         "Building a Tiny 4x4 Off-Road Monster! 🛞🤤 #Shorts",
     ]
 
+    KINETIC_HOOKS = [
+        "Pushing the Button on a Desk Toy... Transforms into a 4x4! 🤯 #Shorts",
+        "The Most Satisfying Kinetic Gadget Car Transformation 🤤 #Shorts",
+        "Wait for the LED headlights to turn on... {car} 💡 #Shorts",
+        "Mechanical Desk Toy to {car} in 8s! ⚡ #Shorts",
+        "Rate this kinetic {car} transformation 1-10? 🔥 #Shorts",
+    ]
+
     @classmethod
     def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
         """Extracts (car_name, niche, material) from prompt text or filename."""
@@ -139,6 +147,8 @@ class YouTubeSEO:
             hooks = cls.FOAM_HOOKS
         elif niche_lower in ("overland", "overlander", "restomod", "microvan"):
             hooks = cls.OVERLAND_HOOKS
+        elif niche_lower in ("kinetic", "gadget", "transformation"):
+            hooks = cls.KINETIC_HOOKS
         else:
             hooks = cls.DIECAST_HOOKS
 
@@ -192,6 +202,13 @@ class YouTubeSEO:
                 f"🎧 Wear headphones for the best binaural impact-driver whirrs, socket clicks, and tire thuds!\n\n"
                 f"💬 Which vehicle should we turn into a 4x4 overland monster next? Drop your pick below! 👇\n\n"
                 f"#Shorts #Overlanding #4x4 #Microvan #CustomCar #OffRoad #CarBuild #Satisfying #Viral"
+            )
+        elif niche_lower in ("kinetic", "gadget", "transformation"):
+            desc = (
+                f"Satisfying sci-fi kinetic desk toy transformation into a miniature {material} {car_name}! 🤖✨\n"
+                f"🎧 Wear headphones for the best binaural button clicks, spring snaps, and servo hums!\n\n"
+                f"💬 Which vehicle should our kinetic desk gadget transform into next? Drop your pick below! 👇\n\n"
+                f"#Shorts #ASMR #KineticToy #DeskToy #Gadget #Transformers #{car_tag} #Satisfying #Viral"
             )
         else:
             desc = (
@@ -329,6 +346,29 @@ class YouTubeSEO:
                 "time lapse build",
                 clean_car,
                 f"{clean_car} 4x4",
+                f"{clean_car} build",
+                car_tag,
+                "binaural ASMR",
+            ]
+        elif niche.lower() in ("kinetic", "gadget", "transformation"):
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "kinetic toy",
+                "desk toy",
+                "gadget",
+                "transformation",
+                "mechanical toy",
+                "spring loaded",
+                "miniature car",
+                "scale model",
+                "diegetic ASMR",
+                clean_car,
+                f"{clean_car} transformation",
                 f"{clean_car} build",
                 car_tag,
                 "binaural ASMR",
