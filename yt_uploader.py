@@ -81,6 +81,14 @@ class YouTubeSEO:
         "The Most Satisfying Wooden {car} Build 🤤 #Shorts",
     ]
 
+    MODEL_KIT_HOOKS = [
+        "Unboxing & Building a {car} in 8s 📦⚡ #Shorts",
+        "The Most Satisfying {car} Model Kit Build 🤤 #Shorts",
+        "Unboxing the Ultimate {material} {car} Model Kit 📦🎧 #Shorts",
+        "Wait for the headlights to turn on... {car} 💡 #Shorts",
+        "Rate this miniature {car} build 1-10? 🔥 #Shorts",
+    ]
+
     @classmethod
     def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
         """Extracts (car_name, niche, material) from prompt text or filename."""
@@ -96,7 +104,14 @@ class YouTubeSEO:
     @classmethod
     def generate_title(cls, car_name: str, material: str = "", niche: str = "diecast", variant_idx: Optional[int] = None) -> str:
         """Generates a viral hook title under 95 characters with #Shorts."""
-        hooks = cls.WOODEN_HOOKS if niche.lower() == "wooden" else cls.DIECAST_HOOKS
+        niche_lower = niche.lower()
+        if niche_lower == "wooden":
+            hooks = cls.WOODEN_HOOKS
+        elif niche_lower in ("model_kit", "modelkit", "unboxing"):
+            hooks = cls.MODEL_KIT_HOOKS
+        else:
+            hooks = cls.DIECAST_HOOKS
+
         if variant_idx is None:
             variant_idx = abs(hash(car_name)) % len(hooks)
         else:
@@ -112,12 +127,20 @@ class YouTubeSEO:
     def generate_description(cls, car_name: str, material: str = "", prompt: str = "", niche: str = "diecast") -> str:
         """Generates high-retention SEO description tailored to the niche."""
         car_tag = car_name.replace(" ", "").replace("-", "")
-        if niche.lower() == "wooden":
+        niche_lower = niche.lower()
+        if niche_lower == "wooden":
             desc = (
                 f"Satisfying macro ASMR woodworking and hand carving of the miniature {material} {car_name}.\n"
                 f"🎧 Wear headphones for the best binaural wood carving scrapes, sanding friction, and tactile wooden taps!\n\n"
                 f"💬 Which dream car should we carve from wood next? Drop your pick in the comments below! 👇\n\n"
                 f"#Shorts #ASMR #Woodworking #CarCarving #Handmade #{car_tag} #WoodArt #Satisfying #Viral"
+            )
+        elif niche_lower in ("model_kit", "modelkit", "unboxing"):
+            desc = (
+                f"Satisfying unboxing & precision assembly of the miniature {material} {car_name} model kit. 📦🏎️\n"
+                f"🎧 Wear headphones for the best binaural cardboard unboxing, micro-ratchet bolt clicks, and engine startup hum!\n\n"
+                f"💬 Which iconic supercar model kit should we build next? Drop your pick in the comments below! 👇\n\n"
+                f"#Shorts #ASMR #ModelKit #Unboxing #CarBuild #{car_tag} #MiniatureCar #Satisfying #Supercars #Viral"
             )
         else:
             desc = (
@@ -162,6 +185,30 @@ class YouTubeSEO:
                 f"#{car_tag}",
                 "binaural ASMR",
                 "relaxing woodworking",
+            ]
+        elif niche.lower() in ("model_kit", "modelkit", "unboxing"):
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "model kit",
+                "unboxing",
+                "model car",
+                "car model kit",
+                "miniature car",
+                "scale model",
+                "precision build",
+                "time lapse build",
+                clean_car,
+                f"{clean_car} model",
+                f"{clean_car} build",
+                f"{brand} model kit",
+                f"#{car_tag}",
+                "diegetic ASMR",
+                "binaural sound",
             ]
         else:
             candidates = [

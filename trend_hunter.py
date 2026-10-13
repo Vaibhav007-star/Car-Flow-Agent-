@@ -95,6 +95,27 @@ def format_wooden_car_prompt(car_name: str, wood_type: str) -> str:
     return prompt
 
 
+def format_model_kit_car_prompt(car_name: str, color: str) -> str:
+    """Formats a POV model-kit car unboxing & assembly prompt strictly according to model_kit_car_assembly.md."""
+    clean_car = car_name.strip()
+    clean_color = color.strip()
+    if clean_color not in LOCKED_COLORS:
+        clean_color = random.choice(LOCKED_COLORS)
+
+    prompt = (
+        f"First-person POV macro 8-second rapid time-lapse: hands open a premium sealed model-kit box on a dark green grid cutting mat, "
+        f"sliding out plastic trays of organized miniature components. "
+        f"Hands swiftly seat {clean_color} miniature {clean_car} chassis, screw in silver engine block and disc brakes, "
+        f"slide on matte-black wheels, snap {clean_color} aerodynamic body panels and rear GT wing flush with audible clicks. "
+        f"Quick microfiber cloth polish across hood, placing the completed miniature {clean_car} on a rotating dark acrylic turntable "
+        f"as tiny LED headlights flare to life with a dramatic lighting sweep. "
+        f"Exactly two natural human hands with five fingers each throughout, hyper-detailed 8K macro product cinematography, "
+        f"shallow depth of field, rapid satisfying assembly pacing, diegetic ASMR mechanical clicks and engine idle only, no music. "
+        f"No extra fingers, no deformed hands, no floating parts, no cartoon look, no text overlays, no watermark."
+    )
+    return prompt
+
+
 class TrendHunter:
     """Discovers viral automotive trends and converts them into multi-niche production prompts."""
 
@@ -220,11 +241,14 @@ class TrendHunter:
             # Determine specific niche for this candidate
             if chosen_niche_mode == "wooden":
                 cand_niche = "wooden"
+            elif chosen_niche_mode in ("model_kit", "modelkit", "unboxing"):
+                cand_niche = "model_kit"
             elif chosen_niche_mode == "diecast":
                 cand_niche = "diecast"
             else:
-                # "all" / "mixed": alternate
-                cand_niche = "wooden" if len(trends) % 2 == 1 else "diecast"
+                # "all" / "mixed": cycle through niches
+                niche_cycle = ["diecast", "wooden", "model_kit"]
+                cand_niche = niche_cycle[len(trends) % len(niche_cycle)]
 
             # Anti-repetition check: pick fresh, unused material for this niche
             if cand_niche == "wooden":
@@ -234,6 +258,13 @@ class TrendHunter:
                     logger.info(f"Skipping {car} (wooden): all 10 locked woods already carved.")
                     continue
                 prompt = format_wooden_car_prompt(car, fresh_mat)
+            elif cand_niche == "model_kit":
+                requested_mat = cand.get("color", LOCKED_COLORS[0])
+                fresh_mat = self.history.get_smart_fresh_material(car, niche="model_kit", preferred_material=requested_mat)
+                if not fresh_mat:
+                    logger.info(f"Skipping {car} (model_kit): all 10 locked colors already built.")
+                    continue
+                prompt = format_model_kit_car_prompt(car, fresh_mat)
             else:
                 requested_mat = cand.get("color", LOCKED_COLORS[0])
                 fresh_mat = self.history.get_smart_fresh_material(car, niche="diecast", preferred_material=requested_mat)
@@ -295,6 +326,8 @@ class TrendHunter:
             if not prompt_text:
                 if niche == "wooden":
                     prompt_text = format_wooden_car_prompt(car_name, material)
+                elif niche in ("model_kit", "modelkit", "unboxing"):
+                    prompt_text = format_model_kit_car_prompt(car_name, material)
                 else:
                     prompt_text = format_short_video_prompt(car_name, material)
 

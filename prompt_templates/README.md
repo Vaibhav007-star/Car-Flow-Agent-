@@ -9,7 +9,8 @@ This folder serves as the central repository for creative video prompt systems, 
 | Template | Niche Name | Visual Theme | Palette / Materials | Duration | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | [`diecast_car_assembly.md`](diecast_car_assembly.md) | **Diecast Miniature Assembly** | Spotless white studio desk, macro model kit parts snapping together | 10 Locked Colors (Pearl White, Racing Red, etc.) | 8-10s | Active |
-| [`wooden_car_carving.md`](wooden_car_carving.md) | **Artisan Wooden Car Carving** | Warm cozy workshop, flat wooden workbench, hands-only chisel & sanding ASMR | 10 Locked Woods (Rich Walnut, Light Maple, etc.) | 8s (Hard limit) | **New** |
+| [`wooden_car_carving.md`](wooden_car_carving.md) | **Artisan Wooden Car Carving** | Warm cozy workshop, flat wooden workbench, hands-only chisel & sanding ASMR | 10 Locked Woods (Rich Walnut, Light Maple, etc.) | 8s (Hard limit) | Active |
+| [`model_kit_car_assembly.md`](model_kit_car_assembly.md) | **Model-Kit Car Unboxing & Assembly** | Hobbyist cutting mat, branded box unboxing, tray reveal, rapid tool bolt & display | 10 Locked Colors + Specific Supercars | 8s (Hard limit) | **New** |
 
 ---
 
