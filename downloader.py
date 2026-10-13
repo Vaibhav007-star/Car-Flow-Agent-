@@ -26,7 +26,7 @@ class VideoDownloader:
         if index is not None:
             return f"video_{index:03d}.mp4"
 
-        # Determine next index from existing files in output_dir
+        # Determine next index from existing files in output_dir, state, and history
         existing = list(self.output_dir.glob("video_*.mp4"))
         indices = []
         for p in existing:
@@ -36,6 +36,23 @@ class VideoDownloader:
                     indices.append(int(match.group(1)))
                 except ValueError:
                     pass
+
+        # Also inspect prompts_state.json and generation_history.json to preserve continuity even when output_videos is cleaned
+        try:
+            from config import STATE_FILE, BASE_DIR
+            import json
+            for fpath in [STATE_FILE, BASE_DIR / "generation_history.json"]:
+                if fpath.exists():
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        for item in data:
+                            out_f = item.get("output_file") or ""
+                            m = re.search(r"video_(\d+)", out_f)
+                            if m:
+                                indices.append(int(m.group(1)))
+        except Exception:
+            pass
+
         next_idx = (max(indices) + 1) if indices else 1
 
         if prompt_text:
