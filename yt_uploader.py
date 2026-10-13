@@ -6,10 +6,17 @@ using the official YouTube Data API v3.
 import os
 import sys
 import json
+import socket
 import logging
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone, timedelta
+
+# Force IPv4 resolution to prevent Windows IPv6 timeout hangs on Google APIs
+_orig_getaddrinfo = socket.getaddrinfo
+def _ipv4_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+socket.getaddrinfo = _ipv4_getaddrinfo
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -23,8 +30,8 @@ from prompt_manager import PromptManager
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("flow_automation.yt_uploader")
 
-# YouTube Upload OAuth Scope
-SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+# YouTube Upload & Management OAuth Scope
+SCOPES = ["https://www.googleapis.com/auth/youtube"]
 CLIENT_SECRETS_FILE = BASE_DIR / "client_secrets.json"
 TOKEN_FILE = BASE_DIR / "token.json"
 # Daily Peak Slots in UTC:
@@ -213,7 +220,14 @@ class YouTubeUploader:
         """
         if self.token_file.exists():
             try:
-                self.credentials = Credentials.from_authorized_user_file(str(self.token_file), SCOPES)
+                with open(self.token_file, "r", encoding="utf-8") as f:
+                    token_data = json.load(f)
+                token_scopes = token_data.get("scopes", [])
+                if not all(s in token_scopes for s in SCOPES):
+                    logger.info("Existing token.json lacks full YouTube management scope. Re-authorizing...")
+                    self.credentials = None
+                else:
+                    self.credentials = Credentials.from_authorized_user_file(str(self.token_file), SCOPES)
             except Exception as e:
                 logger.warning(f"Could not load existing token: {e}")
                 self.credentials = None
@@ -355,6 +369,57 @@ class YouTubeUploader:
         except Exception as e:
             logger.warning(f"Notice setting custom thumbnail for {video_id}: {e}")
             return None
+
+    def update_video_metadata(
+        self,
+        video_id: str,
+        title: str,
+        description: str,
+        tags: Optional[List[str]] = None,
+        category_id: str = "2",
+        privacy_status: Optional[str] = None,
+        publish_at: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Updates metadata and scheduling for an existing YouTube video."""
+        if not self.youtube:
+            self.authenticate()
+
+        clean_title = title.strip()
+        if "#shorts" not in clean_title.lower():
+            clean_title = f"{clean_title[:85]} #Shorts"
+        clean_title = clean_title[:100]
+
+        default_tags = ["Shorts", "car customization", "ASMR car", "miniature car", "supercars", "diegetic ASMR"]
+        all_tags = list(set((tags or []) + default_tags))
+
+        part_list = ["snippet"]
+        body: Dict[str, Any] = {
+            "id": video_id,
+            "snippet": {
+                "title": clean_title,
+                "description": description,
+                "tags": all_tags,
+                "categoryId": category_id,
+            },
+        }
+
+        if privacy_status or publish_at:
+            part_list.append("status")
+            status_body: Dict[str, Any] = {
+                "selfDeclaredMadeForKids": False,
+            }
+            if publish_at:
+                status_body["privacyStatus"] = "private"
+                status_body["publishAt"] = publish_at
+            elif privacy_status:
+                status_body["privacyStatus"] = privacy_status
+            body["status"] = status_body
+
+        part_str = ",".join(part_list)
+        logger.info(f"Updating video {video_id} with part={part_str}...")
+        resp = self.youtube.videos().update(part=part_str, body=body).execute()
+        logger.info(f"Successfully updated metadata on YouTube for {video_id}!")
+        return resp
 
     def auto_upload_completed_videos(
         self,

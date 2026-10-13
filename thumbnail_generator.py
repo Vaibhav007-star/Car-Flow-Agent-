@@ -115,3 +115,4 @@ if __name__ == "__main__":
     print(f"\n[BEST THUMBNAIL]: {best_file}")
     print(f"Timestamp: {info['timestamp']}s (Frame #{info['frame_idx']})")
     print(f"Engagement Score: {info['score']} (Sharpness: {info['sharpness']}, Contrast: {info['contrast']}, Color: {info['color_richness']})\n")
+
