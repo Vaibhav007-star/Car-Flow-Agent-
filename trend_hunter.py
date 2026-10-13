@@ -97,21 +97,21 @@ def format_wooden_car_prompt(car_name: str, wood_type: str) -> str:
 
 
 def format_model_kit_car_prompt(car_name: str, color: str) -> str:
-    """Formats a POV model-kit car unboxing & assembly prompt strictly according to model_kit_car_assembly.md."""
+    """Formats a POV model-kit car unboxing & assembly prompt strictly according to redesigned 8-second model_kit_car_assembly.md."""
     clean_car = car_name.strip()
     clean_color = color.strip()
     if clean_color not in LOCKED_COLORS:
         clean_color = random.choice(LOCKED_COLORS)
 
     prompt = (
-        f"First-person POV macro 8-second rapid time-lapse: hands open a premium sealed model-kit box on a dark green grid cutting mat, "
-        f"sliding out plastic trays of organized miniature components. "
-        f"Hands swiftly seat {clean_color} miniature {clean_car} chassis, screw in silver engine block and disc brakes, "
-        f"slide on matte-black wheels, snap {clean_color} aerodynamic body panels and rear GT wing flush with audible clicks. "
-        f"Quick microfiber cloth polish across hood, placing the completed miniature {clean_car} on a rotating dark acrylic turntable "
-        f"as tiny LED headlights flare to life with a dramatic lighting sweep. "
+        f"First-person POV macro 8-second rapid time-lapse on a dark green grid cutting mat: "
+        f"[0.0-2.0s] precision hobby nippers snip {clean_color} miniature parts off plastic sprue runners next to an open branded box; "
+        f"[2.0-4.0s] hands place rolling chassis down, press in silver engine block, and click matte-black wheels onto axles with micro-ratchet spin; "
+        f"[4.0-6.0s] hands lower {clean_color} aerodynamic body shell flush onto chassis with a crisp snap, tweezers locking carbon-fiber rear GT wing into place; "
+        f"[6.0-8.0s] swift microfiber cloth polish across hood, placing the completed miniature {clean_color} {clean_car} onto an illuminated dark rotating turntable "
+        f"as aggressive LED headlights flare to life with a dramatic lighting sweep. "
         f"Exactly two natural human hands with five fingers each throughout, hyper-detailed 8K macro product cinematography, "
-        f"shallow depth of field, rapid satisfying assembly pacing, diegetic ASMR mechanical clicks and engine idle only, no music. "
+        f"shallow depth of field, rapid satisfying assembly pacing, diegetic ASMR sprue snips, mechanical clicks, and engine idle only, no music. "
         f"No extra fingers, no deformed hands, no floating parts, no cartoon look, no text overlays, no watermark."
     )
     return prompt
