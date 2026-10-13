@@ -84,13 +84,31 @@ class HistoryManager:
         f_lower = (filename or "").lower()
 
         # 1. Detect Niche
-        if "wood" in p_lower or "carv" in p_lower or "workshop" in p_lower or "workbench" in p_lower or "wooden" in f_lower:
+        if "model-kit" in p_lower or "model kit" in p_lower or "unboxing" in p_lower or "model_kit" in f_lower:
+            matched_niche = "model_kit"
+        elif "wood" in p_lower or "carv" in p_lower or "workshop" in p_lower or "workbench" in p_lower or "wooden" in f_lower:
             matched_niche = "wooden"
         else:
             matched_niche = "diecast"
 
         # 2. Extract Material based on Niche
-        if matched_niche == "wooden":
+        if matched_niche == "model_kit":
+            for c in LOCKED_COLORS + ["Rosso Corsa Red", "Solarbeam Yellow", "Kemora Gray", "Liquid Blue", "British Racing Green", "Papaya Orange", "Nardo Gray"]:
+                if c.lower() in p_lower:
+                    matched_material = c
+                    break
+            if prompt_text:
+                m = re.search(r"completed miniature\s+(.*?)\s+on a rotating", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"miniature\s+(.*?)\s+(?:aluminum frame|chassis|carbon monocoque|carbon tub)", prompt_text, re.IGNORECASE)
+                if m:
+                    candidate = m.group(1).strip()
+                    for c in LOCKED_COLORS + ["Rosso Corsa Red", "Solarbeam Yellow", "Kemora Gray", "Liquid Blue", "British Racing Green", "Papaya Orange", "Nardo Gray"]:
+                        if candidate.lower().startswith(c.lower()):
+                            candidate = candidate[len(c):].strip()
+                            break
+                    car_name = candidate
+        elif matched_niche == "wooden":
             for w in LOCKED_WOODS:
                 if w.lower() in p_lower:
                     matched_material = w
