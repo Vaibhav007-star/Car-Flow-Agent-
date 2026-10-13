@@ -327,6 +327,12 @@ class YouTubeUploader:
         shorts_url = f"https://youtube.com/shorts/{video_id}"
         logger.info(f"Successfully uploaded! Video ID: {video_id} -> {shorts_url} ({upload_mode})")
 
+        # Automatically extract and set the best high-engagement thumbnail
+        try:
+            self.set_custom_thumbnail(video_id, video_path)
+        except Exception as e:
+            logger.debug(f"Thumbnail set notice: {e}")
+
         return {
             "video_id": video_id,
             "url": shorts_url,
@@ -334,6 +340,21 @@ class YouTubeUploader:
             "privacy_status": status_body["privacyStatus"],
             "publish_at": publish_at,
         }
+
+    def set_custom_thumbnail(self, video_id: str, video_path: Path) -> Optional[Path]:
+        """Extracts the highest engagement frame from the video and sets it as the custom thumbnail."""
+        try:
+            from thumbnail_generator import ThumbnailGenerator
+            gen = ThumbnailGenerator()
+            best_thumb_path, info = gen.get_best_thumbnail(video_path)
+
+            media = MediaFileUpload(str(best_thumb_path), mimetype="image/jpeg", resumable=True)
+            self.youtube.thumbnails().set(videoId=video_id, media_body=media).execute()
+            logger.info(f"Successfully set custom thumbnail on YouTube for {video_id} from {best_thumb_path.name} (timestamp: {info['timestamp']}s)")
+            return best_thumb_path
+        except Exception as e:
+            logger.warning(f"Notice setting custom thumbnail for {video_id}: {e}")
+            return None
 
     def auto_upload_completed_videos(
         self,

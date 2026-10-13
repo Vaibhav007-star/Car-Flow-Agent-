@@ -25,6 +25,7 @@ client_secrets*.json
 logs/*.log
 output_videos/*.mp4
 output_videos/*.webm
+output_videos/thumbnails/
 
 # Streamlit config / cache
 .streamlit/

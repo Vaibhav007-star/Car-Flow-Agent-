@@ -388,6 +388,11 @@ with tab_gallery:
                         if matched_item.get("yt_uploaded"):
                             st.success(f"🎬 YouTube Short: [{matched_item.get('yt_url')}]({matched_item.get('yt_url')})")
 
+                    thumb_file = OUTPUT_DIR / "thumbnails" / f"{v_path.stem}_best.jpg"
+                    if thumb_file.exists():
+                        with st.expander("🖼️ View Best Extracted Thumbnail"):
+                            st.image(str(thumb_file), caption=f"Hero Thumbnail ({thumb_file.name})", use_container_width=True)
+
                     if not (matched_item and matched_item.get("yt_uploaded")):
                         col_yt1, col_yt2 = st.columns([1, 1])
                         with col_yt1:
