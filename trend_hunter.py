@@ -138,6 +138,28 @@ def format_peel_delivery_prompt(car_name: str, color: str) -> str:
     return prompt
 
 
+def format_foam_car_prompt(car_name: str = "sedan") -> str:
+    """Formats an 8-second photorealistic Styrofoam car crafting prompt according to foam_car_sculpting.md."""
+    clean_car = car_name.strip()
+    is_generic = clean_car.lower() in ("sedan", "car", "model")
+    car_descriptor = "sedan body" if is_generic else f"{clean_car} sedan body with signature grille cuts"
+    hood_descriptor = "smooths the hood" if is_generic else "smooths the dual hood vents"
+    hero_car = f"white Styrofoam {clean_car}"
+
+    prompt = (
+        f"Vertical 9:16 photorealistic ASMR DIY craft time-lapse, exactly 8 seconds on a light oak workbench under soft natural window light: "
+        f"[0.0-2.0s] a pair of natural medium-brown hands uses a steel ruler and utility knife to slice a clean rectangular white Styrofoam block, foam offcuts falling away; "
+        f"[2.0-4.0s] knife swiftly carves the foam block into a sleek sculpted {car_descriptor} with defined wheel arches, scattering tiny foam beads across the table; "
+        f"[4.0-6.0s] close-up: sandpaper {hood_descriptor}, a fine scalpel scribes door seams and window lines, and matching round foam wheels are pressed into place; "
+        f"[6.0-8.0s] a wide soft paintbrush sweeps white foam dust off the car, hands rotating the completed {hero_car} into a dramatic three-quarter hero pose on the workbench. "
+        f"Exactly two natural human hands with five fingers each throughout, consistent workbench and car model, crisp matte EPS foam bead texture, warm neutral workshop tones, shallow depth of field, "
+        f"diegetic ASMR knife slicing, sandpaper friction, and soft bristle brush strokes only, no music, no voice. "
+        f"No face, no text, no watermark, no logos, no extra fingers, no deformed hands, no cartoon look, no glossy plastic, no painted color, no melting foam, no flicker, no shape-shifting."
+    )
+    return prompt
+
+
+
 
 class TrendHunter:
     """Discovers viral automotive trends and converts them into multi-niche production prompts."""
