@@ -97,6 +97,14 @@ class YouTubeSEO:
         "Rate this {car} ASMR factory delivery peel 1-10? 🔥 #Shorts",
     ]
 
+    FOAM_HOOKS = [
+        "Carving a Realistic Sedan from Styrofoam! 🪚🤤 #Shorts",
+        "Satisfying Styrofoam Car Crafting ASMR 🎧🔥 #Shorts",
+        "The Most Satisfying Styrofoam Car Build Ever! 🎧✨ #Shorts",
+        "Listen to the foam carving sound... 🔊🤍 #Shorts",
+        "Rate this Styrofoam car carving 1-10? 🔥 #Shorts",
+    ]
+
     @classmethod
     def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
         """Extracts (car_name, niche, material) from prompt text or filename."""
@@ -119,6 +127,8 @@ class YouTubeSEO:
             hooks = cls.MODEL_KIT_HOOKS
         elif niche_lower in ("peel", "delivery", "peel_and_delivery"):
             hooks = cls.PEEL_HOOKS
+        elif niche_lower in ("foam", "styrofoam", "craft"):
+            hooks = cls.FOAM_HOOKS
         else:
             hooks = cls.DIECAST_HOOKS
 
@@ -158,6 +168,13 @@ class YouTubeSEO:
                 f"🎧 Wear headphones for the best binaural vinyl peel hiss, door latch click, and quad angel-eye LED headlight startup hum!\n\n"
                 f"💬 Which dream supercar should we unpeel and deliver next? Drop your pick in the comments below! 👇\n\n"
                 f"#Shorts #ASMR #CarUnboxing #BMW #M4Competition #{car_tag} #Satisfying #Supercars #Viral"
+            )
+        elif niche_lower in ("foam", "styrofoam", "craft"):
+            desc = (
+                f"Satisfying macro ASMR hand carving of a realistic white Styrofoam {car_name}. 🪚🤍\n"
+                f"🎧 Wear headphones for the best binaural razor blade foam slicing, sandpaper friction, and soft brush strokes!\n\n"
+                f"💬 Which vehicle should we carve from Styrofoam next? Drop your pick in the comments below! 👇\n\n"
+                f"#Shorts #ASMR #Styrofoam #Carving #DIYCraft #CarBuild #Satisfying #Handmade #Viral #{car_tag}"
             )
         else:
             desc = (
@@ -250,6 +267,29 @@ class YouTubeSEO:
                 car_tag,
                 "binaural ASMR",
                 "satisfying video",
+            ]
+        elif niche.lower() in ("foam", "styrofoam", "craft"):
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "foam carving",
+                "styrofoam carving",
+                "foam craft",
+                "car carving",
+                "DIY craft",
+                "handmade car",
+                "scalpel carving",
+                "sandpaper ASMR",
+                "satisfying carving",
+                "binaural ASMR",
+                "relaxing ASMR",
+                "miniature car",
+                "sculpture",
+                car_tag,
             ]
         else:
             candidates = [

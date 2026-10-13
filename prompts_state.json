@@ -107,5 +107,18 @@
     "yt_video_id": "cosK-M5iSV8",
     "yt_url": "https://youtube.com/shorts/cosK-M5iSV8",
     "yt_publish_at": "2026-10-16T08:00:00Z"
+  },
+  {
+    "id": "308de541",
+    "prompt": "Vertical 9:16 photorealistic ASMR DIY craft time-lapse, exactly 8 seconds on a light oak workbench under soft natural window light: [0.0-2.0s] a pair of natural medium-brown hands uses a steel ruler and utility knife to slice a clean rectangular white Styrofoam block, foam offcuts falling away; [2.0-4.0s] knife swiftly carves the foam block into a sleek rounded sedan body with defined wheel arches, scattering tiny foam beads across the table; [4.0-6.0s] close-up: sandpaper smooths the hood, a fine scalpel scribes door seams and window lines, and matching round foam wheels are pressed into place; [6.0-8.0s] a wide soft paintbrush sweeps white foam dust off the car, hands rotating the completed white Styrofoam sedan into a dramatic three-quarter hero pose on the workbench. Exactly two natural human hands with five fingers each throughout, consistent workbench and car model, crisp matte EPS foam bead texture, warm neutral workshop tones, shallow depth of field, diegetic ASMR knife slicing, sandpaper friction, and soft bristle brush strokes only, no music, no voice. No face, no text, no watermark, no logos, no extra fingers, no deformed hands, no cartoon look, no glossy plastic, no painted color, no melting foam, no flicker, no shape-shifting.",
+    "status": "Completed",
+    "output_file": "video_006_foam_craft_white_sedan.mp4",
+    "error": null,
+    "created_at": "2026-10-13T16:05:57.415536+00:00",
+    "updated_at": "2026-10-13T16:05:57.415536+00:00",
+    "yt_uploaded": true,
+    "yt_video_id": "qlFYk7Ip5KQ",
+    "yt_url": "https://youtube.com/shorts/qlFYk7Ip5KQ",
+    "yt_publish_at": "2026-10-16T14:30:00Z"
   }
 ]
