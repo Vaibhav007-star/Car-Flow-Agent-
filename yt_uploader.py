@@ -513,6 +513,10 @@ def main():
     parser.add_argument("--daily-slots", action="store_true", help="Schedule to next 2 daily peak slots (1:30 PM & 8:00 PM IST)")
     parser.add_argument("--schedule-interval", type=float, help="Stagger scheduled batch uploads by N hours apart")
     parser.add_argument("--all", action="store_true", help="Upload all un-uploaded completed videos from queue")
+    parser.add_argument("--update-video", type=str, help="Update an existing YouTube video metadata/schedule by ID or URL")
+    parser.add_argument("--car", type=str, help="Car name for metadata generation")
+    parser.add_argument("--niche", type=str, default="diecast", choices=["diecast", "wooden"], help="Niche for metadata generation")
+    parser.add_argument("--material", type=str, help="Material or color (e.g. Rich Walnut, Racing Red)")
 
     args = parser.parse_args()
     uploader = YouTubeUploader()
@@ -560,6 +564,31 @@ def main():
         for r in results:
             sched = f" (Scheduled: {r['publish_at']})" if r.get('publish_at') else ""
             print(f"- {r['title']} -> {r['url']}{sched}")
+        return
+
+    if args.update_video:
+        vid = args.update_video.split("/")[-1].replace("watch?v=", "")
+        car = args.car or "Supercar"
+        niche = args.niche
+        mat = args.material or ""
+        title = args.title or YouTubeSEO.generate_title(car, material=mat, niche=niche)
+        desc = YouTubeSEO.generate_description(car, material=mat, niche=niche)
+        tags = YouTubeSEO.generate_tags(car, material=mat, niche=niche)
+
+        publish_target = args.schedule_at
+        if args.daily_slots:
+            publish_target = get_next_daily_slots(count=1)[0]
+
+        uploader.update_video_metadata(
+            video_id=vid,
+            title=title,
+            description=desc,
+            tags=tags,
+            privacy_status="private" if publish_target else args.privacy,
+            publish_at=publish_target,
+        )
+        sched_info = f" (Scheduled: {publish_target})" if publish_target else ""
+        print(f"[SUCCESS] Updated video {vid} -> https://youtube.com/shorts/{vid}{sched_info}")
         return
 
     # Default action
