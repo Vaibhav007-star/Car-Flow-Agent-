@@ -410,6 +410,12 @@ class YouTubeUploader:
 
 def main():
     import argparse
+    import sys
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     parser = argparse.ArgumentParser(description="YouTube Shorts Auto-Uploader & Scheduler")
     parser.add_argument("--auth", action="store_true", help="Run one-time YouTube OAuth authorization")

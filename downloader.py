@@ -39,7 +39,18 @@ class VideoDownloader:
         next_idx = (max(indices) + 1) if indices else 1
 
         if prompt_text:
-            # Short sanitized slug appended
+            try:
+                from history_manager import HistoryManager
+                car, niche, mat = HistoryManager.parse_car_niche_and_material(prompt_text)
+                prefix = "wooden_" if niche == "wooden" else ""
+                clean_car = re.sub(r"[^a-zA-Z0-9]+", "_", car.lower()).strip("_")
+                clean_mat = re.sub(r"[^a-zA-Z0-9]+", "_", mat.lower()).strip("_")
+                if clean_car and clean_mat:
+                    return f"video_{next_idx:03d}_{prefix}{clean_mat}_{clean_car}.mp4"
+            except Exception:
+                pass
+
+            # Fallback sanitized slug
             clean_slug = re.sub(r"[^a-zA-Z0-9_\-]+", "_", prompt_text[:30]).strip("_")
             if clean_slug:
                 return f"video_{next_idx:03d}_{clean_slug}.mp4"

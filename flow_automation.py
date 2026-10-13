@@ -306,18 +306,28 @@ class GoogleFlowAutomation:
         if page.locator("video").count() > 0 and page.locator("video").first.is_visible():
             return True
 
+        # 1. Direct HTML5 Canvas Coordinate Click (Flow cards are WebGL rendered)
+        try:
+            canvas = page.locator("canvas").first
+            if canvas.is_visible():
+                coords_to_try = [(110, 300), (150, 320), (200, 300), (250, 350), (180, 280), (120, 260)]
+                for x, y in coords_to_try:
+                    page.mouse.click(x, y)
+                    page.wait_for_timeout(1200)
+                    if page.locator("video").count() > 0:
+                        logger.info(f"Canvas card successfully opened at coordinates ({x}, {y})!")
+                        return True
+        except Exception as e:
+            logger.debug(f"Canvas coordinate click notice: {e}")
+
+        # 2. DOM-based fallbacks
         card_selectors = [
             "flow-media-card",
             "flow-card",
             "[data-node-id]",
             "div[role='article']",
             "div[class*='media-card' i]",
-            "div[class*='thumbnail' i]",
-            "div[class*='media-item' i]",
-            "div[class*='card' i]:has(img)",
-            "div[class*='card' i]:has(video)",
             "button[aria-label*='Play' i]",
-            "div:has-text('Assembling')",
         ]
 
         for sel in card_selectors:
@@ -330,52 +340,11 @@ class GoogleFlowAutomation:
                         logger.info(f"Clicking latest canvas card with selector '{sel}'...")
                         target.click(force=True)
                         page.wait_for_timeout(1500)
-                        if page.locator("video").count() > 0 or page.locator("button[aria-label*='Download' i]").count() > 0:
+                        if page.locator("video").count() > 0:
                             logger.info("Canvas card clicked successfully, video player revealed!")
                             return True
             except Exception as e:
                 logger.debug(f"Selector '{sel}' click notice: {e}")
-
-        try:
-            clicked = page.evaluate("""
-                () => {
-                    const selectors = [
-                        'flow-media-card', 'flow-card', '[data-node-id]',
-                        'div[role=\"article\"]', '.card', '[class*=\"media-item\"]',
-                        '[class*=\"thumbnail\"]', 'button[aria-label*=\"Play\"]'
-                    ];
-                    for (const s of selectors) {
-                        const els = Array.from(document.querySelectorAll(s));
-                        if (els.length > 0) {
-                            const target = els[els.length - 1];
-                            target.click();
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-            """)
-            if clicked:
-                page.wait_for_timeout(1500)
-                if page.locator("video").count() > 0 or page.locator("button[aria-label*='Download' i]").count() > 0:
-                    logger.info("Canvas card clicked via JS evaluation, video player revealed!")
-                    return True
-        except Exception:
-            pass
-
-        # 3. Direct HTML5 Canvas Coordinate Click (Flow cards are WebGL rendered)
-        try:
-            canvas = page.locator("canvas").first
-            if canvas.is_visible():
-                coords_to_try = [(110, 300), (150, 320), (200, 300), (250, 350), (180, 280), (120, 260)]
-                for x, y in coords_to_try:
-                    page.mouse.click(x, y)
-                    page.wait_for_timeout(800)
-                    if page.locator("video").count() > 0 or page.locator("button[aria-label*='Download' i]").count() > 0:
-                        logger.info(f"Canvas card successfully opened at coordinates ({x}, {y})!")
-                        return True
-        except Exception as e:
-            logger.debug(f"Canvas coordinate click notice: {e}")
 
         return False
 

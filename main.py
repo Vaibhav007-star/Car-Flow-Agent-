@@ -38,6 +38,12 @@ def print_status(manager: PromptManager) -> None:
 
 
 def main():
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
     parser = argparse.ArgumentParser(description="Google Flow Video Automation CLI")
     parser.add_argument("--login", action="store_true", help="Launch browser to manually log into Google Account")
     parser.add_argument("--run", action="store_true", help="Run the automated video generation queue")
