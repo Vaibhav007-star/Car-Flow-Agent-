@@ -6,6 +6,7 @@ and viral social media niches, then formats them directly into locked prompt spe
 """
 
 import os
+import sys
 import re
 import random
 import logging
@@ -13,7 +14,7 @@ from typing import List, Dict, Any, Optional
 import xml.etree.ElementTree as ET
 import requests
 
-from config import PROMPTS_FILE
+from config import PROMPTS_FILE, BASE_DIR
 from prompt_manager import PromptManager
 from history_manager import HistoryManager, LOCKED_COLORS, LOCKED_WOODS
 
@@ -197,13 +198,174 @@ class TrendHunter:
             return trends
         except Exception as e:
             logger.warning(f"Google Trends RSS query failed: {e}")
-            return []
+    def fetch_channel_performance(self) -> Dict[str, Any]:
+        """Analyzes real channel metrics (views, likes, engagement) via YouTube Data API v3."""
+        import socket
+        _orig = socket.getaddrinfo
+        socket.getaddrinfo = lambda h, p, f=0, t=0, pr=0, fl=0: _orig(h, p, socket.AF_INET, t, pr, fl)
 
-    def get_trending_cars(self, max_results: int = 4, niche: str = "all") -> List[Dict[str, Any]]:
+        token_file = BASE_DIR / "token.json"
+        if not token_file.exists():
+            logger.info("No token.json found; audience analysis falling back to default weights.")
+            return {}
+
+        try:
+            import json
+            from google.oauth2.credentials import Credentials
+            from googleapiclient.discovery import build
+
+            with open(token_file, "r", encoding="utf-8") as f:
+                token_data = json.load(f)
+            creds = Credentials.from_authorized_user_info(token_data)
+            yt = build("youtube", "v3", credentials=creds)
+
+            ch = yt.channels().list(mine=True, part="contentDetails,statistics").execute()
+            if not ch.get("items"):
+                return {}
+
+            upl_id = ch["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+            items = yt.playlistItems().list(playlistId=upl_id, part="contentDetails", maxResults=25).execute().get("items", [])
+            if not items:
+                return {}
+
+            vids = [it["contentDetails"]["videoId"] for it in items]
+            v_info = yt.videos().list(id=",".join(vids), part="snippet,statistics").execute().get("items", [])
+
+            brand_scores = {}
+            niche_scores = {"diecast": 0, "wooden": 0, "model_kit": 0}
+            video_insights = []
+
+            for v in v_info:
+                title = v["snippet"]["title"]
+                stats = v.get("statistics", {})
+                views = int(stats.get("viewCount", 0))
+                likes = int(stats.get("likeCount", 0))
+                engagement_score = views + (likes * 25)
+
+                brand = None
+                for b in ["BMW", "Porsche", "Nissan", "Ferrari", "Lamborghini", "Toyota", "Audi", "McLaren", "Bugatti", "Koenigsegg"]:
+                    if b.lower() in title.lower():
+                        brand = b
+                        break
+
+                if brand:
+                    brand_scores[brand] = brand_scores.get(brand, 0) + engagement_score
+
+                t_lower = title.lower()
+                if "wood" in t_lower or "carv" in t_lower:
+                    niche_scores["wooden"] += engagement_score
+                elif "unboxing" in t_lower or "model kit" in t_lower:
+                    niche_scores["model_kit"] += engagement_score
+                else:
+                    niche_scores["diecast"] += engagement_score
+
+                video_insights.append({
+                    "title": title,
+                    "views": views,
+                    "likes": likes,
+                    "score": engagement_score,
+                })
+
+            logger.info(f"Audience Analysis: Analyzed {len(video_insights)} channel videos. Top brands: {list(brand_scores.keys())[:3]}")
+            return {
+                "brand_scores": brand_scores,
+                "niche_scores": niche_scores,
+                "videos": sorted(video_insights, key=lambda x: x["score"], reverse=True),
+            }
+        except Exception as e:
+            logger.warning(f"Audience channel analysis notice: {e}")
+            return {}
+
+    def get_audience_driven_trends(self, max_results: int = 1) -> List[Dict[str, Any]]:
+        """Selects high-performing vehicles & niches guided directly by real YouTube audience data."""
+        perf = self.fetch_channel_performance()
+        brand_scores = perf.get("brand_scores", {})
+
+        # Determine smart niche rotation: pick the least recently used niche
+        recent_niches = [e.get("niche") for e in self.history.entries[-3:] if e.get("niche")]
+        all_niches = ["model_kit", "wooden", "diecast"]
+        candidate_niches = [n for n in all_niches if n not in recent_niches]
+        chosen_niche = candidate_niches[0] if candidate_niches else all_niches[(len(self.history.entries)) % len(all_niches)]
+
+        # Candidate vehicles with baseline viral ratings
+        prioritized = [
+            {"car": "BMW M4 Competition G82", "brand": "BMW", "default_color": "Electric Blue", "default_wood": "Natural Oak", "score": 99},
+            {"car": "Nissan Skyline GT-R R34", "brand": "Nissan", "default_color": "Midnight Purple", "default_wood": "Dark Ebony", "score": 98},
+            {"car": "Porsche 911 GT3 RS", "brand": "Porsche", "default_color": "Racing Red", "default_wood": "Rich Walnut", "score": 97},
+            {"car": "Lamborghini Revuelto", "brand": "Lamborghini", "default_color": "Sunset Orange", "default_wood": "Warm Cherry", "score": 96},
+            {"car": "Toyota Supra MK4 Turbo", "brand": "Toyota", "default_color": "Deep Emerald Green", "default_wood": "Golden Teak", "score": 95},
+            {"car": "Ferrari SF90 XX Stradale", "brand": "Ferrari", "default_color": "Rosso Corsa Red", "default_wood": "Warm Cherry", "score": 95},
+            {"car": "Koenigsegg Jesko Attack", "brand": "Koenigsegg", "default_color": "Pearl White", "default_wood": "Light Maple", "score": 94},
+            {"car": "Audi R8 V10 Performance", "brand": "Audi", "default_color": "Matte Grey", "default_wood": "Pale Birch", "score": 93},
+            {"car": "McLaren 765LT Spider", "brand": "McLaren", "default_color": "Sunset Orange", "default_wood": "Honey Ash", "score": 92},
+            {"car": "Dodge Challenger SRT Demon 170", "brand": "Dodge", "default_color": "Jet Black", "default_wood": "Dark Ebony", "score": 91},
+        ]
+
+        # Elevate cars that align with high-performing channel audience brands
+        for c in prioritized:
+            b = c.get("brand")
+            if b in brand_scores:
+                c["score"] += min(brand_scores[b] // 200, 30)
+
+        prioritized.sort(key=lambda x: x["score"], reverse=True)
+
+        results = []
+        for cand in prioritized:
+            if len(results) >= max_results:
+                break
+
+            car = cand["car"]
+
+            # Anti-repetition check: pick fresh, unused material for this specific niche
+            if chosen_niche == "wooden":
+                req_mat = cand.get("default_wood", LOCKED_WOODS[0])
+                fresh_mat = self.history.get_smart_fresh_material(car, niche="wooden", preferred_material=req_mat)
+                if not fresh_mat:
+                    continue
+                prompt = format_wooden_car_prompt(car, fresh_mat)
+            elif chosen_niche == "model_kit":
+                req_mat = cand.get("default_color", LOCKED_COLORS[0])
+                fresh_mat = self.history.get_smart_fresh_material(car, niche="model_kit", preferred_material=req_mat)
+                if not fresh_mat:
+                    continue
+                prompt = format_model_kit_car_prompt(car, fresh_mat)
+            else:
+                req_mat = cand.get("default_color", LOCKED_COLORS[0])
+                fresh_mat = self.history.get_smart_fresh_material(car, niche="diecast", preferred_material=req_mat)
+                if not fresh_mat:
+                    continue
+                prompt = format_short_video_prompt(car, fresh_mat)
+
+            score_val = brand_scores.get(cand.get("brand"), "High")
+            reason = f"Audience Favorite: {cand.get('brand')} (Channel Score: {score_val}) · Balanced into [{chosen_niche.upper()}] niche"
+
+            results.append({
+                "car": car,
+                "niche": chosen_niche,
+                "material": fresh_mat,
+                "color": fresh_mat,
+                "prompt": prompt,
+                "score": cand["score"],
+                "source": "Audience Intelligence",
+                "details": reason,
+            })
+
+            # Cycle niche if gathering multiple items
+            if len(results) < max_results:
+                niche_idx = (all_niches.index(chosen_niche) + 1) % len(all_niches)
+                chosen_niche = all_niches[niche_idx]
+
+        return results
+
+    def get_trending_cars(self, max_results: int = 4, niche: str = "all", audience_driven: bool = False) -> List[Dict[str, Any]]:
         """Returns deduplicated, viral automotive candidates formatted with anti-repetition memory.
         
-        niche: 'diecast' | 'wooden' | 'all' (alternates between both)
+        niche: 'diecast' | 'wooden' | 'model_kit' | 'all' | 'audience'
+        audience_driven: If True, uses actual YouTube channel metrics to guide selection.
         """
+        if audience_driven or niche.lower() in ("audience", "smart"):
+            return self.get_audience_driven_trends(max_results=max_results)
+
         trends: List[Dict[str, Any]] = []
         raw_candidates: List[Dict[str, Any]] = []
 
@@ -336,3 +498,42 @@ class TrendHunter:
             queued_count += 1
 
         return queued_count
+
+
+if __name__ == "__main__":
+    import argparse
+
+    if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+    parser = argparse.ArgumentParser(description="Automotive Trend Hunter & Prompt Synthesizer")
+    parser.add_argument("--audience", action="store_true", help="Guide selection via real YouTube channel performance metrics")
+    parser.add_argument("--count", type=int, default=3, help="Number of cars to hunt (default 3)")
+    parser.add_argument("--niche", type=str, default="all", choices=["all", "diecast", "wooden", "model_kit", "audience"], help="Target niche")
+    parser.add_argument("--queue", action="store_true", help="Directly queue discovered cars into generation queue")
+
+    args = parser.parse_args()
+
+    th = TrendHunter()
+    print(f"\nScanning automotive trends (count={args.count}, niche={args.niche}, audience_driven={args.audience})...")
+    results = th.get_trending_cars(max_results=args.count, niche=args.niche, audience_driven=args.audience)
+
+    print("\n" + "=" * 60)
+    print(f"  DISCOVERED TRENDING CARS ({'AUDIENCE-DRIVEN' if args.audience else 'MARKET-DRIVEN'})")
+    print("=" * 60)
+    for i, item in enumerate(results, 1):
+        n_tag = f"[{item.get('niche', 'diecast').upper()}]"
+        mat = item.get("material") or item.get("color")
+        print(f"{i}. {n_tag} {item['car']} ({mat})")
+        print(f"   Score: {item.get('score')} | Source: {item.get('source')}")
+        print(f"   Details: {item.get('details')}")
+        print(f"   Prompt Preview: {item.get('prompt')[:90]}...\n")
+
+    if args.queue and results:
+        pm = PromptManager()
+        added = th.queue_trending_cars(results, pm)
+        print(f"-> Queued {added} new prompts into prompts_state.json.")
+

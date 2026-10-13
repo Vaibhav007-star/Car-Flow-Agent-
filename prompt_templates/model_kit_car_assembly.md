@@ -90,3 +90,4 @@ First-person POV macro 8-second rapid time-lapse: hands open a premium sealed mo
 * **Anatomy Constraint**: Exactly two hands present in the frame. Each hand has five natural human fingers.
 * **No Metamorphosis**: Parts never transform or change colors mid-shot; they must be physically positioned and fastened.
 * **Negative Prompt**: `No extra fingers, no deformed hands, no extra hands, no floating screws, no morphing parts, no cartoon rendering, no cheap plastic look, no text overlays, no watermarks, no background changes, no music, no speech.`
+

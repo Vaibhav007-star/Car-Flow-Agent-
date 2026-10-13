@@ -52,7 +52,8 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of prompts to process")
     parser.add_argument("--add", type=str, help="Add a new prompt to the queue")
     parser.add_argument("--hunt", type=int, nargs="?", const=3, help="Hunt for top N viral cars and auto-queue them (default 3)")
-    parser.add_argument("--niche", type=str, default="all", choices=["all", "diecast", "wooden"], help="Target content niche for hunting (diecast, wooden, or all)")
+    parser.add_argument("--audience", action="store_true", help="Audience-Driven mode: select next car/niche guided by live YouTube channel analytics")
+    parser.add_argument("--niche", type=str, default="all", choices=["all", "diecast", "wooden", "model_kit"], help="Target content niche for hunting (diecast, wooden, model_kit, or all)")
     parser.add_argument("--upload-yt", action="store_true", help="Upload completed un-uploaded videos to YouTube Shorts")
     parser.add_argument("--privacy", type=str, default="public", choices=["public", "unlisted", "private"], help="YouTube upload privacy status")
     parser.add_argument("--daily-slots", action="store_true", help="Automatically schedule uploads to the 2 daily peak slots (1:30 PM & 8:00 PM IST)")
@@ -67,8 +68,9 @@ def main():
     if args.hunt:
         from trend_hunter import TrendHunter
         th = TrendHunter()
-        print(f"\nScanning viral automotive trends (top {args.hunt}, niche: {args.niche})...")
-        trends = th.get_trending_cars(max_results=args.hunt, niche=args.niche)
+        mode_desc = "AUDIENCE-DRIVEN (guided by YouTube channel metrics)" if args.audience else f"niche: {args.niche}"
+        print(f"\nScanning viral automotive trends (top {args.hunt}, {mode_desc})...")
+        trends = th.get_trending_cars(max_results=args.hunt, niche=args.niche, audience_driven=args.audience)
         added = th.queue_trending_cars(trends, pm)
         print(f"Successfully queued {added} new viral car prompts:")
         for t in trends:

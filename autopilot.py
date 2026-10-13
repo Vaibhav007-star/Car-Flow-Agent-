@@ -41,13 +41,14 @@ if not logger.handlers:
 class AutopilotRunner:
     """Orchestrates end-to-end hands-free content generation cycles."""
 
-    def __init__(self, headless: bool = False, auto_upload: bool = False, privacy_status: str = "public", schedule_interval: Optional[float] = None, daily_slots: bool = False, niche: str = "all"):
+    def __init__(self, headless: bool = False, auto_upload: bool = False, privacy_status: str = "public", schedule_interval: Optional[float] = None, daily_slots: bool = False, niche: str = "all", audience_driven: bool = False):
         self.headless = headless
         self.auto_upload = auto_upload
         self.privacy_status = privacy_status
         self.schedule_interval = schedule_interval
         self.daily_slots = daily_slots
         self.niche = niche
+        self.audience_driven = audience_driven
         self.stop_requested = False
         self.pm = PromptManager()
         self.hm = HistoryManager()
@@ -58,7 +59,8 @@ class AutopilotRunner:
         """Executes one full autonomous cycle: Hunt -> Prompt -> Generate -> Download."""
         cycle_start = datetime.now()
         logger.info("===================================================================")
-        logger.info(f"🚀 STARTING AUTOPILOT CYCLE: {cycle_start.strftime('%Y-%m-%d %H:%M:%S')}")
+        mode_str = "AUDIENCE-DRIVEN (Guided by YouTube Channel Metrics)" if self.audience_driven else f"NICHE: {self.niche.upper()}"
+        logger.info(f"🚀 STARTING AUTOPILOT CYCLE [{mode_str}]: {cycle_start.strftime('%Y-%m-%d %H:%M:%S')}")
         logger.info("===================================================================")
 
         # 0. Anti-Repetition Pre-check
@@ -68,8 +70,8 @@ class AutopilotRunner:
             logger.info(f"Anti-repetition: Purged {cleaned} duplicate prompts from generation queue.")
 
         # 1. Trend Hunting
-        logger.info(f"[Step 1/3] Hunting top {viral_count} viral cars (niche: {self.niche}, excluding past builds)...")
-        trends = self.th.get_trending_cars(max_results=viral_count, niche=self.niche)
+        logger.info(f"[Step 1/3] Hunting top {viral_count} viral cars ({mode_str}, excluding past builds)...")
+        trends = self.th.get_trending_cars(max_results=viral_count, niche=self.niche, audience_driven=self.audience_driven)
         if not trends:
             logger.warning("No viral trends discovered in this cycle. Retrying on next tick.")
             return {"status": "no_trends", "downloaded": []}
@@ -149,7 +151,8 @@ class AutopilotRunner:
 def main():
     parser = argparse.ArgumentParser(description="Google Flow Autopilot Runner")
     parser.add_argument("--count", type=int, default=2, help="Number of viral cars to produce per cycle (default 2)")
-    parser.add_argument("--niche", type=str, default="all", choices=["all", "diecast", "wooden"], help="Content niche for autopilot (default: all / alternating)")
+    parser.add_argument("--audience", action="store_true", help="Audience-Driven Auto-Pilot guided by live YouTube channel performance metrics")
+    parser.add_argument("--niche", type=str, default="all", choices=["all", "diecast", "wooden", "model_kit"], help="Content niche for autopilot (default: all / alternating)")
     parser.add_argument("--interval-hours", type=float, default=12.0, help="Interval between cycles in hours (default 12.0)")
     parser.add_argument("--once", action="store_true", help="Execute a single cycle immediately and exit")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode without opening GUI window")
@@ -166,6 +169,7 @@ def main():
         schedule_interval=args.schedule_interval,
         daily_slots=args.daily_slots,
         niche=args.niche,
+        audience_driven=args.audience,
     )
 
     # Handle Ctrl+C gracefully

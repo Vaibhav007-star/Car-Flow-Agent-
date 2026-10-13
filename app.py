@@ -22,7 +22,14 @@ st.set_page_config(
 from config import FLOW_URL, OUTPUT_DIR, LOGS_DIR, USER_DATA_DIR, YOUTUBE_API_KEY
 from prompt_manager import PromptManager
 from downloader import VideoDownloader
-from trend_hunter import TrendHunter, LOCKED_COLORS, LOCKED_WOODS, format_short_video_prompt, format_wooden_car_prompt
+from trend_hunter import (
+    TrendHunter,
+    LOCKED_COLORS,
+    LOCKED_WOODS,
+    format_short_video_prompt,
+    format_wooden_car_prompt,
+    format_model_kit_car_prompt,
+)
 from history_manager import HistoryManager, LOCKED_COLORS, LOCKED_WOODS
 
 # Initialize managers
@@ -177,27 +184,31 @@ with tab_hunter:
             "YouTube Data API Key (Optional)",
             value=YOUTUBE_API_KEY,
             type="password",
-            help="Enables real-time queries for top-viewed YouTube Shorts. If left blank, Google Trends and the viral database are used automatically."
+            help="Enables real-time queries for top-viewed YouTube Shorts. If left blank, channel OAuth token and viral database are used automatically."
         )
     with col_h2:
         niche_selection = st.selectbox(
-            "🎨 Content Niche",
+            "🎨 Content Engine / Niche",
             options=[
-                "Artisan Wooden Car Carving (New 🪵)",
-                "Diecast Miniature Assembly (Original 🏎️)",
-                "Mixed / Alternating (Both 🔀)"
+                "🎯 Audience-Driven Auto-Pilot (YouTube Analytics Guided)",
+                "📦 Model Kit Unboxing & Assembly (8s Time-Lapse)",
+                "🪵 Artisan Wooden Car Carving (ASMR)",
+                "🏎️ Diecast Miniature Assembly (Original)",
+                "🔀 Mixed / Alternating (All 3 Niches)"
             ],
             index=0,
-            help="Choose between handcrafted wooden car carving ASMR or spotless studio diecast assembly."
+            help="Audience-Driven mode analyzes your real YouTube channel analytics (views, likes, engagement) to prioritize the next winning car & niche."
         )
         niche_key_map = {
-            "Artisan Wooden Car Carving (New 🪵)": "wooden",
-            "Diecast Miniature Assembly (Original 🏎️)": "diecast",
-            "Mixed / Alternating (Both 🔀)": "all",
+            "🎯 Audience-Driven Auto-Pilot (YouTube Analytics Guided)": "audience",
+            "📦 Model Kit Unboxing & Assembly (8s Time-Lapse)": "model_kit",
+            "🪵 Artisan Wooden Car Carving (ASMR)": "wooden",
+            "🏎️ Diecast Miniature Assembly (Original)": "diecast",
+            "🔀 Mixed / Alternating (All 3 Niches)": "all",
         }
         chosen_niche = niche_key_map[niche_selection]
     with col_h3:
-        num_cars = st.slider("Number of cars", min_value=1, max_value=8, value=4)
+        num_cars = st.slider("Number of cars", min_value=1, max_value=8, value=3)
     with col_h4:
         st.write("")
         st.write("")
@@ -205,17 +216,44 @@ with tab_hunter:
 
     if "discovered_trends" not in st.session_state:
         st.session_state.discovered_trends = []
+    if "channel_insights" not in st.session_state:
+        st.session_state.channel_insights = None
 
     if scan_btn:
         hunter = TrendHunter(youtube_api_key=yt_api_input.strip() or None)
-        with st.spinner("Scanning YouTube Shorts, Google Trends, and viral automotive niches..."):
-            st.session_state.discovered_trends = hunter.get_trending_cars(max_results=num_cars, niche=chosen_niche)
+        with st.spinner("Analyzing YouTube channel performance & automotive trends..."):
+            is_audience_mode = (chosen_niche == "audience")
+            st.session_state.discovered_trends = hunter.get_trending_cars(
+                max_results=num_cars,
+                niche="all" if is_audience_mode else chosen_niche,
+                audience_driven=is_audience_mode,
+            )
+            if is_audience_mode:
+                st.session_state.channel_insights = hunter.fetch_channel_performance()
+            else:
+                st.session_state.channel_insights = None
         st.success(f"Discovered {len(st.session_state.discovered_trends)} viral car trends ({niche_selection})!")
+
+    # Display Live Audience Channel Insights if available
+    if st.session_state.channel_insights:
+        insights = st.session_state.channel_insights
+        with st.expander("📊 Live Channel Audience Analytics (ai.car.07)", expanded=True):
+            col_in1, col_in2 = st.columns(2)
+            with col_in1:
+                st.markdown("**Top Audience Demand by Brand (Views + Likes):**")
+                b_scores = insights.get("brand_scores", {})
+                for brand, score in sorted(b_scores.items(), key=lambda x: x[1], reverse=True)[:5]:
+                    st.write(f"- **{brand}**: {score:,} engagement points")
+            with col_in2:
+                st.markdown("**Niche Velocity Breakdown:**")
+                n_scores = insights.get("niche_scores", {})
+                for n_name, n_val in n_scores.items():
+                    st.write(f"- **{n_name.replace('_', ' ').title()}**: {n_val:,} points")
 
     if st.session_state.discovered_trends:
         col_act1, col_act2 = st.columns([3, 1])
         with col_act1:
-            st.info("Review discovered trends below. You can change their wood/color or add them directly to your generation queue.")
+            st.info("Review discovered trends below. You can change their finish or add them directly to your generation queue.")
         with col_act2:
             if st.button("➕ Queue All Discovered Cars", use_container_width=True):
                 hunter = TrendHunter()
@@ -224,16 +262,24 @@ with tab_hunter:
                 st.rerun()
 
         for idx, t in enumerate(st.session_state.discovered_trends):
-            cand_niche = t.get("niche", "diecast")
-            is_wooden = cand_niche == "wooden"
-            niche_label = "🪵 Wooden Carving" if is_wooden else "🏎️ Diecast Assembly"
-            palette = LOCKED_WOODS if is_wooden else LOCKED_COLORS
-            palette_label = "Carved Wood" if is_wooden else "Chosen Color"
+            cand_niche = t.get("niche", "diecast").lower()
+            if cand_niche == "wooden":
+                niche_label = "🪵 Wooden Carving"
+                palette = LOCKED_WOODS
+                palette_label = "Carved Wood"
+            elif cand_niche in ("model_kit", "modelkit"):
+                niche_label = "📦 Model Kit Assembly"
+                palette = LOCKED_COLORS
+                palette_label = "Kit Color"
+            else:
+                niche_label = "🏎️ Diecast Assembly"
+                palette = LOCKED_COLORS
+                palette_label = "Paint Color"
 
             with st.container(border=True):
                 col_c1, col_c2, col_c3, col_c4 = st.columns([3, 2, 2, 1])
                 with col_c1:
-                    st.markdown(f"### {t['car']} <span style='font-size:0.85rem; background:#2e2417; color:#f0ad4e; padding:3px 8px; border-radius:4px;'>{niche_label}</span>", unsafe_allow_html=True)
+                    st.markdown(f"### {t['car']} <span style='font-size:0.85rem; background:#1c2d42; color:#58a6ff; padding:3px 8px; border-radius:4px;'>{niche_label}</span>", unsafe_allow_html=True)
                     st.caption(f"Source: **{t['source']}** · Virality Score: **{t['score']}/100**")
                     used_mats = hm.get_used_materials(t["car"], niche=cand_niche)
                     if used_mats:
@@ -250,8 +296,10 @@ with tab_hunter:
                     )
                     t["material"] = selected_mat
                     t["color"] = selected_mat
-                    if is_wooden:
+                    if cand_niche == "wooden":
                         t["prompt"] = format_wooden_car_prompt(t["car"], selected_mat)
+                    elif cand_niche in ("model_kit", "modelkit"):
+                        t["prompt"] = format_model_kit_car_prompt(t["car"], selected_mat)
                     else:
                         t["prompt"] = format_short_video_prompt(t["car"], selected_mat)
                 with col_c3:
@@ -322,7 +370,12 @@ with tab_history:
         st.markdown("### 🏎️ Completed Vehicles in History")
         for idx, entry in enumerate(hm.entries):
             e_niche = entry.get("niche", "diecast").lower()
-            n_label = "🪵 Wooden" if e_niche == "wooden" else "🏎️ Diecast"
+            if e_niche == "wooden":
+                n_label = "🪵 Wooden"
+            elif e_niche in ("model_kit", "modelkit"):
+                n_label = "📦 Model Kit"
+            else:
+                n_label = "🏎️ Diecast"
             mat = entry.get("material") or entry.get("color")
             with st.container(border=True):
                 c1, c2, c3, c4 = st.columns([3, 2, 3, 2])
