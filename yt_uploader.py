@@ -121,6 +121,14 @@ class YouTubeSEO:
         "Rate this kinetic {car} transformation 1-10? 🔥 #Shorts",
     ]
 
+    CONTAINER_HOOKS = [
+        "Unboxing a Miniature Shipping Container: {car}! 📦🔥 #Shorts",
+        "Wait for the exhaust flames... {car} 🔊🔥 #Shorts",
+        "Most Satisfying Miniature Shipping Container Peel ASMR 🤤 #Shorts",
+        "Snipping the seal on a {material} {car} in 8s ⚡ #Shorts",
+        "Rate this {car} shipping container unboxing 1-10? 🔥 #Shorts",
+    ]
+
     @classmethod
     def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
         """Extracts (car_name, niche, material) from prompt text or filename."""
@@ -149,6 +157,8 @@ class YouTubeSEO:
             hooks = cls.OVERLAND_HOOKS
         elif niche_lower in ("kinetic", "gadget", "transformation"):
             hooks = cls.KINETIC_HOOKS
+        elif niche_lower in ("container", "container_unboxing", "shipping_container"):
+            hooks = cls.CONTAINER_HOOKS
         else:
             hooks = cls.DIECAST_HOOKS
 
@@ -209,6 +219,13 @@ class YouTubeSEO:
                 f"🎧 Wear headphones for the best binaural button clicks, spring snaps, and servo hums!\n\n"
                 f"💬 Which vehicle should our kinetic desk gadget transform into next? Drop your pick below! 👇\n\n"
                 f"#Shorts #ASMR #KineticToy #DeskToy #Gadget #Transformers #{car_tag} #Satisfying #Viral"
+            )
+        elif niche_lower in ("container", "container_unboxing", "shipping_container"):
+            desc = (
+                f"Satisfying ASMR unboxing of a miniature shipping container with factory film peel & ignition flames of the {material} {car_name}! 📦🔥\n"
+                f"🎧 Wear headphones for the best binaural bolt cutter snips, vinyl peel hisses, and exhaust backfire pops!\n\n"
+                f"💬 Which dream car should we unbox from a shipping container next? Drop your pick below! 👇\n\n"
+                f"#Shorts #ASMR #Unboxing #CarUnboxing #ShippingContainer #{car_tag} #Satisfying #Viral"
             )
         else:
             desc = (
@@ -370,6 +387,29 @@ class YouTubeSEO:
                 clean_car,
                 f"{clean_car} transformation",
                 f"{clean_car} build",
+                car_tag,
+                "binaural ASMR",
+            ]
+        elif niche.lower() in ("container", "container_unboxing", "shipping_container"):
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "unboxing",
+                "car unboxing",
+                "shipping container",
+                "miniature unboxing",
+                "peel ASMR",
+                "exhaust flame",
+                "miniature car",
+                "scale model",
+                "diegetic ASMR",
+                clean_car,
+                f"{clean_car} unboxing",
+                f"{clean_car} peel",
                 car_tag,
                 "binaural ASMR",
             ]

@@ -84,7 +84,9 @@ class HistoryManager:
         f_lower = (filename or "").lower()
 
         # 1. Detect Niche
-        if "kinetic" in p_lower or "gadget" in p_lower or "transformation" in p_lower or "kinetic" in f_lower or "gadget" in f_lower:
+        if "shipping container" in p_lower or "bolt cutters" in p_lower or "container" in p_lower or "container" in f_lower:
+            matched_niche = "container"
+        elif "kinetic" in p_lower or "gadget" in p_lower or "transformation" in p_lower or "kinetic" in f_lower or "gadget" in f_lower:
             matched_niche = "kinetic"
         elif "overland" in p_lower or "microvan" in p_lower or "off-road" in p_lower or "overland" in f_lower or "restomod" in p_lower:
             matched_niche = "overland"
@@ -144,6 +146,26 @@ class HistoryManager:
                     for w in LOCKED_WOODS:
                         if candidate.lower().startswith(w.lower()):
                             candidate = candidate[len(w):].strip()
+        elif matched_niche == "container":
+            matched_material = "Mirror Black"
+            for c in LOCKED_COLORS + ["Mirror Black"]:
+                if c.lower() in p_lower:
+                    matched_material = c
+                    break
+            if prompt_text:
+                m = re.search(r"holding a 1:18 scale\s+(?:mirror-black|[\w-]+)\s+(.*?);", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"holding a 1:18 scale\s+(?:.*?)\s+(.*?);", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"completed\s+(?:.*?)\s+(.*?)\s+resting in front", prompt_text, re.IGNORECASE)
+                if m:
+                    candidate = m.group(1).strip()
+                    for pref in ["mirror-black", "black", "silver", "red", "white"]:
+                        if candidate.lower().startswith(pref):
+                            candidate = candidate[len(pref):].strip()
+                    car_name = candidate
+            if not car_name:
+                car_name = "Mercedes-AMG G63"
         elif matched_niche == "kinetic":
             matched_material = "Crimson Red"
             for c in LOCKED_COLORS:

@@ -192,6 +192,23 @@ def format_kinetic_gadget_prompt(car_name: str = "boxy 4x4 SUV", color: str = "C
     return prompt
 
 
+def format_container_unboxing_prompt(car_name: str = "Mercedes-AMG G63", color: str = "Mirror Black") -> str:
+    """Formats an 8-second container unboxing & film peel prompt according to container_unboxing_peel.md."""
+    clean_car = car_name.strip() or "Mercedes-AMG G63"
+    clean_color = color.strip() or "Mirror Black"
+    prompt = (
+        f"Vertical 9:16 photorealistic ASMR miniature unboxing, exactly 8 seconds in extreme macro on a dark walnut workbench with softly blurred tool pegboard: "
+        f"[0.0-2.0s] extreme macro as tiny bolt cutters snip a yellow security seal on a miniature black shipping container, doors swinging open as fine tweezers slide out a black tray holding a 1:18 scale {clean_color.lower()} {clean_car}; "
+        f"[2.0-4.0s] tweezers smoothly peel clear protective transit film off the pristine {clean_color.lower()} hood and roof, a soft foam swab wiping across the high-gloss mirror finish; "
+        f"[4.0-6.0s] driver door clicks open, tweezers peeling protective clear film off the steering wheel and digital gauge cluster before a tiny key turns the ignition switch; "
+        f"[6.0-8.0s] twin round LED halo headlights flare bright, blue-orange flame pops from chrome exhaust tips, pulling into a dramatic three-quarter hero shot of the completed {clean_color.lower()} {clean_car} resting in front of the open shipping container. "
+        f"Exactly two natural human hands with fine tweezers and tools throughout, consistent vehicle and container model, extreme macro depth of field, warm top-left workshop lighting, "
+        f"diegetic ASMR bolt cutter snip, vinyl peel hiss, door click, key turn, and exhaust pop only, no music, no voice. "
+        f"No face, no visible person, no text, no logos, no watermark, no extra fingers, no deformed hands, no cartoon style, no car color or shape changing, no flicker."
+    )
+    return prompt
+
+
 class TrendHunter:
     """Discovers viral automotive trends and converts them into multi-niche production prompts."""
 
@@ -573,6 +590,8 @@ class TrendHunter:
                     prompt_text = format_overlander_prompt(car_name)
                 elif niche in ("kinetic", "gadget", "transformation"):
                     prompt_text = format_kinetic_gadget_prompt(car_name, material)
+                elif niche in ("container", "container_unboxing", "shipping_container"):
+                    prompt_text = format_container_unboxing_prompt(car_name, material)
                 else:
                     prompt_text = format_short_video_prompt(car_name, material)
 
