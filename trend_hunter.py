@@ -117,6 +117,28 @@ def format_model_kit_car_prompt(car_name: str, color: str) -> str:
     return prompt
 
 
+def format_peel_delivery_prompt(car_name: str, color: str) -> str:
+    """Formats an ASMR protective peel & push-to-start delivery prompt according to peel_and_delivery_car_assembly.md."""
+    clean_car = car_name.strip()
+    clean_color = color.strip()
+    if clean_color not in LOCKED_COLORS:
+        clean_color = random.choice(LOCKED_COLORS)
+
+    prompt = (
+        f"First-person POV macro 8-second rapid time-lapse: hands use fine tweezers to smoothly peel clear protective transit film "
+        f"off the pristine {clean_color} miniature {clean_car} hood and carbon roof. "
+        f"Hands click on carbon-fiber side mirrors and rear diffuser, pull tiny foam blocks from the front grilles, "
+        f"and gently click open the miniature driver's door. A fingertip presses the tiny center-console push-to-start button "
+        f"as the digital gauge cluster glows bright, LED headlights flare to life with a dramatic light sweep, "
+        f"and the completed {clean_color} {clean_car} orbits smoothly on an illuminated dark turntable. "
+        f"Exactly two natural human hands with five fingers each throughout, hyper-detailed 8K macro product cinematography, "
+        f"shallow depth of field, rapid satisfying pacing, diegetic ASMR vinyl peels, mechanical clicks, and engine idle only, no music. "
+        f"No extra fingers, no deformed hands, no floating parts, no cartoon look, no text overlays, no watermark."
+    )
+    return prompt
+
+
+
 class TrendHunter:
     """Discovers viral automotive trends and converts them into multi-niche production prompts."""
 
@@ -490,6 +512,8 @@ class TrendHunter:
                     prompt_text = format_wooden_car_prompt(car_name, material)
                 elif niche in ("model_kit", "modelkit", "unboxing"):
                     prompt_text = format_model_kit_car_prompt(car_name, material)
+                elif niche in ("peel", "delivery", "peel_and_delivery"):
+                    prompt_text = format_peel_delivery_prompt(car_name, material)
                 else:
                     prompt_text = format_short_video_prompt(car_name, material)
 
