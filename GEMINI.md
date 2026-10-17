@@ -30,6 +30,7 @@ All prompts MUST be synthesized using the established, tested template specifica
 | **4x4 Overlander** | [`offroad_overlander_makeover.md`](prompt_templates/offroad_overlander_makeover.md) | Bright cyclorama garage | Pneumatic impact drivers bolt bull-bar & lift kit |
 | **Kinetic Gadget** | [`kinetic_gadget_transformation.md`](prompt_templates/kinetic_gadget_transformation.md) | Living room granite table | Push-button spring burst unfolds 1:18 scale model |
 | **Container Unboxing**| [`container_unboxing_peel.md`](prompt_templates/container_unboxing_peel.md) | Dark walnut workbench | Bolt cutters snip seal, tray slide, film peel, exhaust flame |
+| **Miniature Restoration** | [`miniature_car_restoration.md`](prompt_templates/miniature_car_restoration.md) | Clean white-grey tabletop | Scalpel & tweezers moss scrape, airbrush coat, water bead hero |
 
 ---
 
@@ -48,3 +49,4 @@ All prompts MUST be synthesized using the established, tested template specifica
 - **Thumbnails**: Always score frames using `thumbnail_generator.py` and upload the highest engagement score hero frame (favoring 6.5s-7.6s hero reveals).
 - **SEO**: Clean all hashtags from YouTube Data API tags (API requirement: no `#` symbols in tag array). Always include `#Shorts` in the title.
 - **Disk Cleanliness**: Keep local storage lean; once a video is uploaded and scheduled, raw `.mp4` files can be cleaned from `output_videos/` since master records are preserved in `prompts_state.json` and `generation_history.json`.
+

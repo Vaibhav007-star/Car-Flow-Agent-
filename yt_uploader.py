@@ -129,6 +129,14 @@ class YouTubeSEO:
         "Rate this {car} shipping container unboxing 1-10? 🔥 #Shorts",
     ]
 
+    RESTORATION_HOOKS = [
+        "Restoring a Rusty Miniature {car} ASMR! 🪛✨ #Shorts",
+        "Wait for the mirror clear coat... {car} 🤤✨ #Shorts",
+        "Most Satisfying Miniature {car} Restoration ASMR 🎧🔥 #Shorts",
+        "Transforming a Rusty Barn-Find into a {material} {car}! 🚗💨 #Shorts",
+        "Rate this miniature {car} restoration 1-10? 🔥 #Shorts",
+    ]
+
     @classmethod
     def extract_metadata(cls, prompt: str = "", filename: str = "") -> tuple[str, str, str]:
         """Extracts (car_name, niche, material) from prompt text or filename."""
@@ -159,6 +167,8 @@ class YouTubeSEO:
             hooks = cls.KINETIC_HOOKS
         elif niche_lower in ("container", "container_unboxing", "shipping_container"):
             hooks = cls.CONTAINER_HOOKS
+        elif niche_lower in ("restoration", "restore", "miniature_restoration"):
+            hooks = cls.RESTORATION_HOOKS
         else:
             hooks = cls.DIECAST_HOOKS
 
@@ -226,6 +236,14 @@ class YouTubeSEO:
                 f"🎧 Wear headphones for the best binaural bolt cutter snips, vinyl peel hisses, and exhaust backfire pops!\n\n"
                 f"💬 Which dream car should we unbox from a shipping container next? Drop your pick below! 👇\n\n"
                 f"#Shorts #ASMR #Unboxing #CarUnboxing #ShippingContainer #{car_tag} #Satisfying #Viral"
+            )
+        elif niche_lower in ("restoration", "restore", "miniature_restoration"):
+            mat_text = material if material.lower().startswith("mirror") else f"mirror {material}"
+            desc = (
+                f"Satisfying ASMR barn-find miniature {car_name} restoration from rust to {mat_text}! 🪛✨\n"
+                f"🎧 Wear headphones for the best binaural scalpel scrapes, tweezers clicks, and airbrush spray hisses!\n\n"
+                f"💬 Which rusty classic should we restore next? Drop your pick below! 👇\n\n"
+                f"#Shorts #ASMR #Restoration #CarRestoration #MiniatureCar #{car_tag} #Satisfying #Viral"
             )
         else:
             desc = (
@@ -410,6 +428,31 @@ class YouTubeSEO:
                 clean_car,
                 f"{clean_car} unboxing",
                 f"{clean_car} peel",
+                car_tag,
+                "binaural ASMR",
+            ]
+        elif niche.lower() in ("restoration", "restore", "miniature_restoration"):
+            candidates = [
+                "Shorts",
+                "YouTube Shorts",
+                "viral shorts",
+                "satisfying",
+                "oddly satisfying",
+                "ASMR",
+                "restoration",
+                "car restoration",
+                "miniature restoration",
+                "toy car restoration",
+                "model car restoration",
+                "scalpel scraping",
+                "airbrush painting",
+                "clear coat",
+                "miniature car",
+                "scale model",
+                "diegetic ASMR",
+                clean_car,
+                f"{clean_car} restoration",
+                f"{clean_car} ASMR",
                 car_tag,
                 "binaural ASMR",
             ]

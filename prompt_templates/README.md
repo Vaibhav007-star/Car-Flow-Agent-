@@ -15,7 +15,8 @@ This folder serves as the central repository for creative video prompt systems, 
 | [`foam_car_sculpting.md`](foam_car_sculpting.md) | **Styrofoam Car Crafting ASMR** | Light oak workbench, razor foam carving, sanding dust, brush sweep | White Matte EPS Foam | 8s (Hard limit) | Active |
 | [`offroad_overlander_makeover.md`](offroad_overlander_makeover.md) | **4x4 Overlander Restomod Makeover** | Seamless white cyclorama, mechanics bolt bull-bars, roof racks & lift kits | Rugged Off-Road White & Black | 8s (Hard limit) | Active |
 | [`kinetic_gadget_transformation.md`](kinetic_gadget_transformation.md) | **Kinetic Gadget Car Transformation** | Polished granite table in living room, button press triggers spring-loaded deployment | Generalized Any Car & Color | 8s (Hard limit) | Active |
-| [`container_unboxing_peel.md`](container_unboxing_peel.md) | **Container Unboxing & Peel ASMR** | Dark walnut workbench, bolt cutters snip seal, tray slide, film peel, ignition flame | 10 Locked Colors + Any Supercar/SUV | 8s (Hard limit) | **New** |
+| [`container_unboxing_peel.md`](container_unboxing_peel.md) | **Container Unboxing & Peel ASMR** | Dark walnut workbench, bolt cutters snip seal, tray slide, film peel, ignition flame | 10 Locked Colors + Any Supercar/SUV | 8s (Hard limit) | Active |
+| [`miniature_car_restoration.md`](miniature_car_restoration.md) | **Miniature Car Restoration ASMR** | White-grey tabletop, rusty barn find, scalpel & tweezers scrape, airbrush paint, water droplets | Any Vehicle + Mirror/Metallic Colors | 8s (Hard limit) | **New** |
 
 ---
 

@@ -203,8 +203,24 @@ def format_container_unboxing_prompt(car_name: str = "Mercedes-AMG G63", color: 
         f"[4.0-6.0s] driver door clicks open, tweezers peeling protective clear film off the steering wheel and digital gauge cluster before a tiny key turns the ignition switch; "
         f"[6.0-8.0s] twin round LED halo headlights flare bright, blue-orange flame pops from chrome exhaust tips, pulling into a dramatic three-quarter hero shot of the completed {clean_color.lower()} {clean_car} resting in front of the open shipping container. "
         f"Exactly two natural human hands with fine tweezers and tools throughout, consistent vehicle and container model, extreme macro depth of field, warm top-left workshop lighting, "
-        f"diegetic ASMR bolt cutter snip, vinyl peel hiss, door click, key turn, and exhaust pop only, no music, no voice. "
         f"No face, no visible person, no text, no logos, no watermark, no extra fingers, no deformed hands, no cartoon style, no car color or shape changing, no flicker."
+    )
+    return prompt
+
+
+def format_restoration_prompt(car_name: str = "BMW M4 Coupe", color: str = "Mirror Jet Black") -> str:
+    """Formats an 8-second miniature car restoration ASMR prompt according to miniature_car_restoration.md."""
+    clean_car = car_name.strip() or "BMW M4 Coupe"
+    clean_color = color.strip() or "Mirror Jet Black"
+    prompt = (
+        f"Vertical 9:16 photorealistic miniature car restoration, exactly 8 seconds in extreme macro with shallow depth of field on a clean white-grey tabletop with muted purple-grey backdrop: "
+        f"[0.0-2.0s] natural hands hold a tiny rusty, moss-covered 1:18 scale {clean_car}, extreme macro as fine scalpel and tweezers begin scraping moss and grime from the front grille and wheel arch; "
+        f"[2.0-4.0s] tweezers lift away stubborn dirt revealing bare silver metal underneath, followed by a swift wipe revealing smooth matte grey primer; "
+        f"[4.0-6.0s] precision airbrush sprays fine {clean_color.lower()} paint building into a flawless coat, followed by a high-gloss clear coat giving a mirror finish as chrome trim snaps into place; "
+        f"[6.0-8.0s] fine water droplets mist across the glossy {clean_color.lower()} paintwork, camera performing a slow cinematic macro track along the side showing custom wheels and illuminated red taillights in a holding hero pose. "
+        f"Exactly two natural human hands with micro tools throughout, consistent vehicle scale and geometry, paint states progressing in realistic order, extreme macro depth of field, soft diffused studio lighting, "
+        f"diegetic ASMR scalpel scrape, tweezers click, airbrush hiss, and water mist spritz only, no music, no voice. "
+        f"No face, no visible person, no text, no logos, no watermark, no extra fingers, no deformed hands, no cartoon style, no paint order jumping, no car shape changing, no flicker."
     )
     return prompt
 
@@ -592,6 +608,8 @@ class TrendHunter:
                     prompt_text = format_kinetic_gadget_prompt(car_name, material)
                 elif niche in ("container", "container_unboxing", "shipping_container"):
                     prompt_text = format_container_unboxing_prompt(car_name, material)
+                elif niche in ("restoration", "restore", "miniature_restoration"):
+                    prompt_text = format_restoration_prompt(car_name, material)
                 else:
                     prompt_text = format_short_video_prompt(car_name, material)
 

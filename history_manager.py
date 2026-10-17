@@ -84,7 +84,9 @@ class HistoryManager:
         f_lower = (filename or "").lower()
 
         # 1. Detect Niche
-        if "shipping container" in p_lower or "bolt cutters" in p_lower or "container" in p_lower or "container" in f_lower:
+        if "restoration" in p_lower or "moss" in p_lower or "rusty" in p_lower or "scalpel" in p_lower or "restoration" in f_lower:
+            matched_niche = "restoration"
+        elif "shipping container" in p_lower or "bolt cutters" in p_lower or "container" in p_lower or "container" in f_lower:
             matched_niche = "container"
         elif "kinetic" in p_lower or "gadget" in p_lower or "transformation" in p_lower or "kinetic" in f_lower or "gadget" in f_lower:
             matched_niche = "kinetic"
@@ -146,6 +148,20 @@ class HistoryManager:
                     for w in LOCKED_WOODS:
                         if candidate.lower().startswith(w.lower()):
                             candidate = candidate[len(w):].strip()
+        elif matched_niche == "restoration":
+            matched_material = "Mirror Jet Black"
+            for c in LOCKED_COLORS + ["Mirror Jet Black", "Jet Black", "Gloss Black"]:
+                if c.lower() in p_lower:
+                    matched_material = c
+                    break
+            if prompt_text:
+                m = re.search(r"rusty,\s+moss-covered\s+(?:1:18\s+scale\s+)?(.*?),\s+extreme\s+macro", prompt_text, re.IGNORECASE)
+                if not m:
+                    m = re.search(r"restoration.*?scale\s+(.*?),\s+extreme\s+macro", prompt_text, re.IGNORECASE)
+                if m:
+                    car_name = m.group(1).strip()
+            if not car_name and "bmw" in (p_lower + f_lower):
+                car_name = "BMW M4 Coupe"
         elif matched_niche == "container":
             matched_material = "Mirror Black"
             for c in LOCKED_COLORS + ["Mirror Black"]:

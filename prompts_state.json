@@ -146,5 +146,18 @@
     "yt_video_id": "yMV5qpajxIs",
     "yt_url": "https://youtube.com/shorts/yMV5qpajxIs",
     "yt_publish_at": "2026-10-17T14:30:00Z"
+  },
+  {
+    "id": "0fc8a624",
+    "prompt": "Vertical 9:16 photorealistic miniature car restoration, exactly 8 seconds in extreme macro with shallow depth of field on a clean white-grey tabletop with muted purple-grey backdrop: [0.0-2.0s] natural hands hold a tiny rusty, moss-covered 1:18 scale BMW M4 Coupe, extreme macro as fine scalpel and tweezers begin scraping moss and grime from the twin kidney grille and wheel arch; [2.0-4.0s] tweezers lift away stubborn dirt revealing bare silver metal underneath, followed by a swift wipe revealing smooth matte grey primer; [4.0-6.0s] precision airbrush sprays fine mirror jet black paint building into a flawless coat, followed by a high-gloss clear coat giving a mirror finish as chrome kidney trim snaps into place; [6.0-8.0s] fine water droplets mist across the glossy mirror jet black paintwork, camera performing a slow cinematic macro track along the side showing black 5-spoke wheels and illuminated red taillights in a holding hero pose. Exactly two natural human hands with micro tools throughout, consistent vehicle scale and geometry, paint states progressing in realistic order, extreme macro depth of field, soft diffused studio lighting, diegetic ASMR scalpel scrape, tweezers click, airbrush hiss, and water mist spritz only, no music, no voice. No face, no visible person, no text, no logos, no watermark, no extra fingers, no deformed hands, no cartoon style, no paint order jumping, no car shape changing, no flicker.",
+    "status": "Completed",
+    "output_file": "video_009_restoration_mirror_jet_black_bmw_m4.mp4",
+    "error": null,
+    "created_at": "2026-10-17T06:28:50.379323+00:00",
+    "updated_at": "2026-10-17T06:28:50.379323+00:00",
+    "yt_uploaded": true,
+    "yt_video_id": "o6vqJz5HpaA",
+    "yt_url": "https://youtube.com/shorts/o6vqJz5HpaA",
+    "yt_publish_at": "2026-10-18T08:00:00Z"
   }
 ]
