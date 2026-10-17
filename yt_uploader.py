@@ -43,9 +43,23 @@ DAILY_SLOTS_UTC = [(8, 0), (14, 30)]
 def get_next_daily_slots(count: int = 1, min_lead_minutes: int = 45) -> List[str]:
     """Computes upcoming target ISO 8601 timestamps matching the 2 daily peak slots (1:30 PM & 8:00 PM IST).
     
-    Guarantees at least min_lead_minutes buffer from now to ensure YouTube has processing headroom.
+    Guarantees at least min_lead_minutes buffer from now and automatically avoids slots already booked in prompts_state.json.
     """
     now_utc = datetime.now(timezone.utc)
+    booked_slots = set()
+    state_file = BASE_DIR / "prompts_state.json"
+    if state_file.exists():
+        try:
+            with open(state_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                items = data if isinstance(data, list) else data.get("prompts", [])
+                for it in items:
+                    pub = it.get("yt_publish_at") or it.get("scheduled_publish_time")
+                    if pub:
+                        booked_slots.add(pub.strip())
+        except Exception:
+            pass
+
     slots: List[str] = []
     day_offset = 0
 
@@ -54,9 +68,11 @@ def get_next_daily_slots(count: int = 1, min_lead_minutes: int = 45) -> List[str
         for hour, minute in DAILY_SLOTS_UTC:
             candidate = datetime(target_day.year, target_day.month, target_day.day, hour, minute, tzinfo=timezone.utc)
             if candidate > now_utc + timedelta(minutes=min_lead_minutes):
-                slots.append(candidate.strftime("%Y-%m-%dT%H:%M:%SZ"))
-                if len(slots) == count:
-                    break
+                ts = candidate.strftime("%Y-%m-%dT%H:%M:%SZ")
+                if ts not in booked_slots:
+                    slots.append(ts)
+                    if len(slots) == count:
+                        break
         day_offset += 1
 
     return slots
